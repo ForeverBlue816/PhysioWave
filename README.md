@@ -19,8 +19,8 @@ Official PyTorch implementation of **PhysioWave**, accepted at NeurIPS 2025. Phy
 
 ## 📊 Performance
 
-### State-of-the-Art Results
-- **PTB-XL (ECG Arrhythmia)**: 73.1% F1 Score
+### State-of-the-Art Results(Example)
+- **PTB-XL (ECG Arrhythmia)**: 73.1% Accuracy
 - **EPN-612 (EMG Gesture)**: 94.5% Accuracy
 
 ## 💾 Pretrained Models
