@@ -19,7 +19,7 @@ Official PyTorch implementation of **PhysioWave**, accepted at NeurIPS 2025. Phy
 
 ## 📊 Performance
 
-### State-of-the-Art Results(Example)
+### State-of-the-Art Results (Example)
 - **PTB-XL (ECG Arrhythmia)**: 73.1% Accuracy
 - **EPN-612 (EMG Gesture)**: 94.5% Accuracy
 
@@ -54,22 +54,135 @@ pip install -r requirements.txt
 
 ### Data Preprocessing
 
+#### Dataset Download Links
+
+Download the datasets from the following sources:
+
+**ECG Datasets**:
+- **PTB-XL**: [PhysioNet PTB-XL Database](https://physionet.org/content/ptb-xl/1.0.3/)
+- **MIMIC-IV-ECG**: [PhysioNet MIMIC-IV-ECG](https://physionet.org/content/mimic-iv-ecg/1.0/)
+- **Other ECG datasets**: [PhysioNet Challenge 2021](https://physionet.org/content/challenge-2021/1.0.3/)
+
+**EMG Datasets**:
+- **EPN-612**: [Zenodo EPN-612 Dataset](https://zenodo.org/records/4421500)
+- **NinaPro DB6**: [NinaPro Database 6](https://ninapro.hevs.ch/instructions/DB6.html)
+
+#### Data Format Requirements
+
+All preprocessed data should be saved in HDF5 format with the following structure:
+- **Keys**: 
+  - `data`: Signal data array (required)
+  - `label`: Classification labels (required for supervised tasks)
+- **Data Shape**: `(N, C, T)`
+  - `N`: Number of samples
+  - `C`: Number of channels
+  - `T`: Time points (sequence length)
+- **Data Type**: `float32` for signals, `int64` for labels
+
 #### ECG Data (PTB-XL Example)
+
 ```bash
+# Download PTB-XL dataset
+wget -r -N -c -np https://physionet.org/files/ptb-xl/1.0.3/
+
 # Preprocess PTB-XL dataset for fine-tuning
 python ECG/ptbxl_finetune.py
+```
 
+**Input Requirements**:
+- Raw PTB-XL dataset with 12-lead ECG recordings
+- Sampling rate: 500 Hz
+- Signal length: 10 seconds (5000 samples)
+
+**Output Format**:
+- Files: `train.h5`, `val.h5`, `test.h5`
+- Shape: `(N, 12, 2048)` - 12 ECG leads, 2048 time points per window
+- Preprocessing: MinMax normalization to [-1, 1]
+- Sliding window: 2048 samples window, 1024 stride
+- Labels: 5 superclasses (NORM, MI, STTC, CD, HYP)
+
+```bash
 # Preprocess MIMIC-IV for pretraining
 python ECG/mimic_pretrain.py
 ```
 
+**Input Requirements**:
+- MIMIC-IV-ECG dataset (.dat/.hea files)
+- Sampling rate: 500 Hz
+- Variable length recordings
+
+**Output Format**:
+- Files: `mimic_pretrain_train.h5`, `mimic_pretrain_val.h5`
+- Shape: `(N, 12, 2048)` - 12 ECG leads, 2048 time points
+- Preprocessing: Z-score normalization (mean=0, std=1)
+- No labels (unsupervised pretraining)
+
 #### EMG Data (EPN-612 Example)
+
 ```bash
+# Download EPN-612 dataset from Zenodo
+# https://zenodo.org/records/4421500
+
 # Preprocess EPN-612 dataset
 python EMG/epn_finetune.py
+```
+
+**Input Requirements**:
+- EPN-612 JSON files with EMG recordings
+- Sampling rate: 200 Hz
+- 8 EMG channels from Myo armband
+
+**Output Format**:
+- Files: `epn612_train_set.h5`, `epn612_val_set.h5`, `epn612_test_set.h5`
+- Shape: `(N, 8, 1024)` - 8 EMG channels, 1024 time points
+- Preprocessing: Max absolute value normalization
+- Labels: 6 gesture classes (0=noGesture, 1=waveIn, 2=waveOut, 3=pinch, 4=open, 5=fist)
+
+```bash
+# Download NinaPro DB6 from official website
+# https://ninapro.hevs.ch/instructions/DB6.html
 
 # Preprocess NinaPro DB6 for pretraining
 python EMG/db6_pretrain.py
+```
+
+**Input Requirements**:
+- NinaPro DB6 .mat files
+- Sampling rate: 2000 Hz
+- 14 EMG channels (2 bad channels removed, 8 selected)
+
+**Output Format**:
+- Files: `train.h5`, `val.h5`
+- Shape: `(N, 8, 1024)` - 8 EMG channels, 1024 time points
+- Preprocessing: Z-score normalization
+- Sliding window: 1024 samples window, 512 stride
+- Train/val split: 80/20
+
+#### Custom Dataset Preparation
+
+To prepare your own dataset, ensure it follows this format:
+
+```python
+import h5py
+import numpy as np
+
+# Create HDF5 file
+with h5py.File('your_dataset.h5', 'w') as f:
+    # Signal data: (num_samples, num_channels, sequence_length)
+    data = np.random.randn(1000, 8, 1024).astype(np.float32)
+    f.create_dataset('data', data=data)
+    
+    # Labels: (num_samples,)
+    labels = np.random.randint(0, 6, size=(1000,)).astype(np.int64)
+    f.create_dataset('label', data=labels)
+```
+
+**Key Parameters by Signal Type**:
+
+| Signal | Channels | Typical Length | Sampling Rate | Normalization |
+|--------|----------|----------------|---------------|---------------|
+| ECG    | 12       | 2048           | 500 Hz        | MinMax [-1,1] or Z-score |
+| EMG    | 8        | 1024           | 200-2000 Hz   | Max-abs or Z-score |
 ```
 
 ### Pretraining
@@ -198,12 +311,6 @@ PhysioWave/
    ```bash
    --grad_accumulation_steps 4 --batch_size 8
    ```
-
-## 🤝 Contributing
-
-We welcome contributions! Please feel free to submit issues or pull requests.
-
-
 ## 📖 Citation
 
 If you use this code or our pretrained models, please cite our paper:
@@ -224,3 +331,8 @@ We thank the authors of the datasets used in this work and the PyTorch team for 
 ---
 
 **Note**: For the latest updates and discussions, please check our [GitHub repository](https://github.com/ForeverBlue816/PhysioWave) and [paper](https://arxiv.org/abs/2506.10351).
+
+
+## 🤝 Contributing
+
+We welcome contributions! Please feel free to submit issues or pull requests. 
