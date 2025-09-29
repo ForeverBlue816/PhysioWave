@@ -34,6 +34,7 @@ Key components:
 ### State-of-the-Art Results (Example)
 - **PTB-XL (ECG Arrhythmia)**: 73.1% Accuracy
 - **EPN-612 (EMG Gesture)**: 94.5% Accuracy
+  
 We will release the code for multi-label and multi-modal tasks soon.
 
 ## 💾 Pretrained Models
