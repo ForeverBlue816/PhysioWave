@@ -14,14 +14,27 @@ Official PyTorch implementation of **PhysioWave**, accepted at NeurIPS 2025. Phy
 - **Learnable Wavelet Decomposition**: Adaptive multi-resolution analysis with soft gating mechanism
 - **Frequency-Guided Masking**: Novel masking strategy that prioritizes high-energy frequency components
 - **Cross-Scale Feature Fusion**: Attention-based fusion across different wavelet decomposition levels
-- **Multi-Modal Support**: Unified framework for ECG, EMG, and EEG signals
+- **Multi-Modal Support**: Unified framework for ECG and EMG signals
 - **Large-Scale Pretraining**: Models trained on 182GB of ECG and 823GB of EMG data
+
+## 🏗️ Model Architecture
+
+![PhysioWave Architecture](fig/model.png)
+
+**Model Overview**: The PhysioWave pretraining pipeline begins by initializing a set of standard wavelet functions (e.g., 'db6', 'sym4'), from which learnable low-pass and high-pass filters are generated. These filters are then used for wavelet decomposition to obtain multi-scale frequency-band representations. The decomposed features are processed into spatio-temporal patches, with importance scores computed using FFT-based spectral energy. High-scoring patches are masked and passed through Transformer layers, followed by a lightweight decoder for patch reconstruction.
+
+Key components:
+1. **Learnable Wavelet Decomposition** - Adaptively selects optimal wavelet bases for input signals
+2. **Multi-Scale Feature Reconstruction** - Hierarchical decomposition with soft gating between scales
+3. **Frequency-Guided Masking** - Identifies and masks high-energy patches for self-supervised learning
+4. **Transformer Encoder/Decoder** - Processes masked patches with rotary position embeddings
 
 ## 📊 Performance
 
 ### State-of-the-Art Results (Example)
 - **PTB-XL (ECG Arrhythmia)**: 73.1% Accuracy
 - **EPN-612 (EMG Gesture)**: 94.5% Accuracy
+We will release the code for multi-label and multi-modal tasks soon.
 
 ## 💾 Pretrained Models
 
