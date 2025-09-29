@@ -65,7 +65,7 @@ Download the datasets from the following sources:
 
 **EMG Datasets**:
 - **EPN-612**: [Zenodo EPN-612 Dataset](https://zenodo.org/records/4421500)
-- **NinaPro DB6**: [NinaPro Database 6](https://ninapro.hevs.ch/instructions/DB6.html)
+- **NinaPro**: [NinaPro Database](https://ninapro.hevs.ch/instructions/DB6.html)
 
 #### Data Format Requirements
 
@@ -285,9 +285,15 @@ PhysioWave/
 - `--pooling`: Pooling strategy ('mean', 'max', 'first', 'last')
 
 ### Model Parameters
+
 - `--in_channels`: Input channels (12 for ECG, 8 for EMG)
 - `--max_level`: Wavelet decomposition levels (default: 3)
 - `--wavelet_names`: Wavelet families to use (e.g., 'db4', 'db6', 'sym4')
+  - **Tip**: You can experiment with different wavelet combinations for your specific signal characteristics. Try:
+    - ECG: `db4 db6 sym4 coif2` - Good for capturing QRS complexes
+    - EMG: `sym4 sym5 db6 coif3 bior4.4` - Effective for muscle activity patterns
+    - Custom combinations: `db1 db2 db3 db4 db5 db6` - Explore Daubechies family
+    - The model will learn to adaptively select the best wavelets for your data
 - `--embed_dim`: Embedding dimension (256/384/512)
 - `--depth`: Number of transformer layers (6/8/12)
 
