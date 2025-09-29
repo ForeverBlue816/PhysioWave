@@ -66,7 +66,7 @@ torchrun --nproc_per_node=${NUM_GPUS} pretrain.py \
   --warmup_epochs 10 \                     # Linear warmup epochs
   \
   `# Frequency-Guided Masking for EMG` \
-  --mask_ratio 0.15 \                      # Mask 15% of patches
+  --mask_ratio 0.6 \                      # Mask 60% of patches
   --masking_strategy frequency_guided \    # Frequency-based masking for EMG features
   --importance_ratio 0.6 \                 # Weight for frequency importance scoring
   \
