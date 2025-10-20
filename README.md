@@ -610,48 +610,6 @@ torchrun --nproc_per_node=4 [script.py]
 
 </details>
 
----
-
-## 🐛 Troubleshooting
-
-<details>
-<summary><b>Common Issues</b></summary>
-
-### Out of Memory (OOM)
-
-**Symptoms:** CUDA out of memory error
-
-**Solutions:**
-```bash
-# Reduce batch size
---batch_size 8
-
-# Enable gradient checkpointing
---use_gradient_checkpointing
-
-# Reduce model size
---embed_dim 256 --depth 6 --num_heads 8
-```
-
-### Poor Performance
-
-**Symptoms:** Low accuracy or slow convergence
-
-**Solutions:**
-```bash
-# Increase training duration
---epochs 100
-
-# Adjust learning rate
---lr 5e-5 --warmup_epochs 10
-
-# Stronger regularization
---weight_decay 1e-3 --dropout 0.2 --head_dropout 0.3 --label_smoothing 0.1
-
-# Try different thresholds (multi-label)
---threshold 0.2  # More sensitive
---threshold 0.5  # More specific
-```
 
 ### Data Loading Issues
 
