@@ -26,9 +26,9 @@ Official PyTorch implementation of **PhysioWave**, accepted at **NeurIPS 2025**.
 
 ## 🏗️ Model Architecture
 
-\<div align="center"\>
-\<img src="fig/model.png" alt="PhysioWave Architecture" width="90%"\>
-\</div\>
+<div align="center">
+<img src="fig/model.png" alt="PhysioWave Architecture" width="90%">
+</div>
 
 **Model Overview**: The PhysioWave pretraining pipeline begins by initializing a set of standard wavelet functions (e.g., 'db6', 'sym4'), from which learnable low-pass and high-pass filters are generated. These filters are then used for wavelet decomposition to obtain multi-scale frequency-band representations. The decomposed features are processed into spatio-temporal patches, with importance scores computed using FFT-based spectral energy. High-scoring patches are masked and passed through Transformer layers, followed by a lightweight decoder for patch reconstruction.
 
