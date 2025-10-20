@@ -560,14 +560,6 @@ torchrun --nproc_per_node=4 finetune.py \
 <details>
 <summary><b>Hardware and Performance</b></summary>
 
-#### Recommended Hardware
-
-| Task | Minimum | Recommended | Optimal |
-|------|---------|-------------|---------|
-| **Pretraining** | 4x RTX 3090 | 4x A100 40GB | 8x A100 80GB |
-| **Fine-tuning** | 4x RTX 3090 | 2-4x RTX 3090 | 4x A100 40GB |
-| **Inference** | 4x RTX 3060 | 4x RTX 3090 | 4x A100 |
-
 #### Performance Tips
 
 ```bash
