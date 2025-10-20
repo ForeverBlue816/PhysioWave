@@ -575,57 +575,6 @@ torchrun --nproc_per_node=4 [script.py]
 
 </details>
 
----
-
-## 📈 Evaluation Metrics
-
-<details>
-<summary><b>Single-Label Metrics</b></summary>
-
-- **Accuracy**: Overall classification accuracy
-- **Precision/Recall/F1**: Per-class and macro-averaged
-- **Confusion Matrix**: Visual representation of predictions
-
-</details>
-
-<details>
-<summary><b>Multi-Label Metrics</b></summary>
-
-#### Sample-Based Metrics
-- **Precision (Micro/Macro)**: Correct predictions among all positive predictions
-- **Recall (Micro/Macro)**: Correct predictions among all actual positives
-- **F1-Score (Micro/Macro)**: Harmonic mean of precision and recall
-
-#### Ranking-Based Metrics
-- **AUROC (Micro/Macro)**: Area under ROC curve
-- **Average Precision (Micro/Macro)**: Area under precision-recall curve
-
-#### Set-Based Metrics
-- **Hamming Loss**: Fraction of incorrectly predicted labels
-- **Jaccard Score (Micro/Macro)**: Intersection over union of predictions
-
-**Understanding Micro vs Macro:**
-- **Micro**: Aggregate across all samples, then compute metric (weighted by frequency)
-- **Macro**: Compute metric per class, then average (equal weight per class)
-
-</details>
-
-
-### Data Loading Issues
-
-**Check HDF5 file structure:**
-```bash
-python -c "import h5py; f=h5py.File('train.h5','r'); print(list(f.keys())); print(f['data'].shape, f['label'].shape)"
-```
-
-**Validate data format:**
-```bash
-python dataset_multilabel.py --data_files train.h5 --task multilabel
-```
-
-</details>
-
----
 
 ## 📖 Citation
 
