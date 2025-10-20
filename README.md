@@ -1,87 +1,173 @@
 # PhysioWave: A Multi-Scale Wavelet-Transformer for Physiological Signal Representation
 
-[](https://neurips.cc/)
-[](https://arxiv.org/abs/2506.10351)
-[](https://www.python.org/downloads/)
-[](https://pytorch.org/)
-[](https://www.google.com/search?q=LICENSE)
+<div align="center">
 
-Official PyTorch implementation of **PhysioWave**, accepted at **NeurIPS 2025**. PhysioWave is a novel wavelet-based architecture for physiological signal processing that leverages adaptive multi-scale decomposition and frequency-guided masking to advance self-supervised learning.
+[![NeurIPS 2025](https://img.shields.io/badge/NeurIPS-2025-blue.svg)](https://neurips.cc/)
+[![arXiv](https://img.shields.io/badge/arXiv-2506.10351-b31b1b.svg)](https://arxiv.org/abs/2506.10351)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
+[![PyTorch](https://img.shields.io/badge/PyTorch-2.0+-ee4c2c.svg)](https://pytorch.org/)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
------
+</div>
+
+<div align="center">
+
+**Official PyTorch implementation of PhysioWave, accepted at NeurIPS 2025**
+
+*A novel wavelet-based architecture for physiological signal processing that leverages adaptive multi-scale decomposition and frequency-guided masking to advance self-supervised learning*
+
+</div>
+
+---
 
 ## 🌟 Key Features
 
-✨ **Learnable Wavelet Decomposition**: Adaptive multi-resolution analysis with soft gating mechanism
+<table>
+<tr>
+<td width="50%">
 
-📊 **Frequency-Guided Masking**: Novel masking strategy that prioritizes high-energy frequency components
+✨ **Learnable Wavelet Decomposition**
+- Adaptive multi-resolution analysis
+- Soft gating mechanism for optimal wavelet selection
 
-🔗 **Cross-Scale Feature Fusion**: Attention-based fusion across different wavelet decomposition levels
+📊 **Frequency-Guided Masking**
+- Novel masking strategy prioritizing high-energy components
+- Superior to random masking for signal representation
 
-🧠 **Multi-Modal Support**: Unified framework for ECG and EMG signals
+</td>
+<td width="50%">
 
-📈 **Large-Scale Pretraining**: Models trained on 182GB of ECG and 823GB of EMG data
+🔗 **Cross-Scale Feature Fusion**
+- Attention-based fusion across decomposition levels
+- Hierarchical feature integration
 
------
+🧠 **Multi-Modal Support**
+- Unified framework for ECG and EMG signals
+- Extensible to other physiological signals
+
+</td>
+</tr>
+</table>
+
+<div align="center">
+
+📈 **Large-Scale Pretraining**: Models trained on **182GB of ECG** and **823GB of EMG** data
+
+</div>
+
+---
 
 ## 🏗️ Model Architecture
 
 <div align="center">
+
 <img src="fig/model.png" alt="PhysioWave Architecture" width="90%">
+
 </div>
 
-**Model Overview**: The PhysioWave pretraining pipeline begins by initializing a set of standard wavelet functions (e.g., 'db6', 'sym4'), from which learnable low-pass and high-pass filters are generated. These filters are then used for wavelet decomposition to obtain multi-scale frequency-band representations. The decomposed features are processed into spatio-temporal patches, with importance scores computed using FFT-based spectral energy. High-scoring patches are masked and passed through Transformer layers, followed by a lightweight decoder for patch reconstruction.
+### Pipeline Overview
 
-**Key Components:**
+The PhysioWave pretraining pipeline consists of five key stages:
 
-  - 🌊 **Learnable Wavelet Decomposition** - Adaptively selects optimal wavelet bases for input signals
-  - 📐 **Multi-Scale Feature Reconstruction** - Hierarchical decomposition with soft gating between scales
-  - 🎯 **Frequency-Guided Masking** - Identifies and masks high-energy patches for self-supervised learning
-  - 🔄 **Transformer Encoder/Decoder** - Processes masked patches with rotary position embeddings
+1. **Wavelet Initialization**: Standard wavelet functions (e.g., 'db6', 'sym4') generate learnable low-pass and high-pass filters
+2. **Multi-Scale Decomposition**: Adaptive wavelet decomposition produces multi-scale frequency-band representations
+3. **Patch Embedding**: Decomposed features are processed into spatio-temporal patches with FFT-based importance scoring
+4. **Masked Encoding**: High-scoring patches are masked and processed through Transformer layers with rotary position embeddings
+5. **Reconstruction**: Lightweight decoder reconstructs masked patches for self-supervised learning
 
------
+### Core Components
+
+| Component | Description |
+|-----------|-------------|
+| 🌊 **Learnable Wavelet Decomposition** | Adaptively selects optimal wavelet bases for input signals |
+| 📐 **Multi-Scale Feature Reconstruction** | Hierarchical decomposition with soft gating between scales |
+| 🎯 **Frequency-Guided Masking** | Identifies and masks high-energy patches for self-supervised learning |
+| 🔄 **Transformer Encoder/Decoder** | Processes masked patches with rotary position embeddings |
+
+---
 
 ## 📊 Performance Highlights
 
-| Task | Dataset | Performance |
-|------|---------|-------------|
-| **ECG Arrhythmia Classification** | PTB-XL | **73.1%** Accuracy |
-| **ECG Multi-Label Classification** | CPSC 2018 | **77.1%** F1-Micro |
-| **ECG Multi-Label Classification** | Shaoxing | **94.6%** F1-Micro |
-| **EMG Gesture Recognition** | EPN-612 | **94.5%** Accuracy |
+### Benchmark Results
 
-**Multi-Label Classification Detailed Metrics:**
+<div align="center">
 
-  * **CPSC 2018 (9-Class):**
+| Task | Dataset | Metric | Performance |
+|------|---------|--------|-------------|
+| **ECG Arrhythmia** | PTB-XL | Accuracy | **73.1%** |
+| **ECG Multi-Label** | CPSC 2018 | F1-Micro | **77.1%** |
+| **ECG Multi-Label** | Shaoxing | F1-Micro | **94.6%** |
+| **EMG Gesture** | EPN-612 | Accuracy | **94.5%** |
 
-      * Precision(micro/macro): 0.7389 / 0.6173
-      * Recall(micro/macro): 0.8059 / 0.6883
-      * F1(micro/macro): 0.7709 / 0.6500
-      * AUROC(micro/macro): 0.9584 / 0.9280
+</div>
 
-  * **Shaoxing (4-Class):**
+### Multi-Label Classification Detailed Metrics
 
-      * Precision(micro/macro): 0.9389 / 0.9361
-      * Recall(micro/macro): 0.9536 / 0.9470
-      * F1(micro/macro): 0.9462 / 0.9413
-      * AUROC(micro/macro): 0.9949 / 0.9930
+<details>
+<summary><b>CPSC 2018 Dataset (9-Class Multi-Label)</b></summary>
 
------
+<div align="center">
+
+| Metric | Micro-Average | Macro-Average |
+|--------|---------------|---------------|
+| **Precision** | 0.7389 | 0.6173 |
+| **Recall** | 0.8059 | 0.6883 |
+| **F1-Score** | 0.7709 | 0.6500 |
+| **AUROC** | 0.9584 | 0.9280 |
+
+</div>
+
+**Dataset Details:**
+- 9 official diagnostic classes (SNR, AF, IAVB, LBBB, RBBB, PAC, PVC, STD, STE)
+- 12-lead ECG signals at 500 Hz
+- Record-level split to prevent data leakage
+
+</details>
+
+<details>
+<summary><b>Chapman-Shaoxing Dataset (4-Class Multi-Label)</b></summary>
+
+<div align="center">
+
+| Metric | Micro-Average | Macro-Average |
+|--------|---------------|---------------|
+| **Precision** | 0.9389 | 0.9361 |
+| **Recall** | 0.9536 | 0.9470 |
+| **F1-Score** | 0.9462 | 0.9413 |
+| **AUROC** | 0.9949 | 0.9930 |
+
+</div>
+
+**Dataset Details:**
+- 4 merged diagnostic classes (SB, AFIB, GSVT, SR)
+- 12-lead ECG signals at 500 Hz
+- Balanced multi-label distribution
+
+</details>
+
+---
 
 ## 💾 Pretrained Models
 
-\<div align="center"\>
+<div align="center">
 
 ### [📥 Download Pretrained Models](https://drive.google.com/drive/folders/1CobMgFT1WIOAHfz1j7Yij3BL6kkjm59k?dmr=1&ec=wgc-drive-globalnav-goto)
 
-| Model | Parameters | Description |
-|-------|------------|-------------|
-| `ecg.pth` | 14M | ECG pretrained model |
-| `emg.pth` | 5M | EMG pretrained model |
+</div>
 
-\</div\>
+| Model | Parameters | Training Data | Description |
+|-------|------------|---------------|-------------|
+| `ecg.pth` | 14M | 182GB ECG | ECG pretrained model |
+| `emg.pth` | 5M | 823GB EMG | EMG pretrained model |
 
------
+**Usage:**
+```python
+# Load pretrained model
+checkpoint = torch.load('ecg.pth')
+model.load_state_dict(checkpoint['model_state_dict'])
+```
+
+---
 
 ## 🚀 Quick Start
 
@@ -105,131 +191,246 @@ pip install -r requirements.txt
 
 ### 📦 Data Preparation
 
-\<details\>
-\<summary\>\<b\>Dataset Download Links\</b\>\</summary\>
+<details>
+<summary><b>Dataset Download Links</b></summary>
 
-**ECG Datasets:**
+#### ECG Datasets
 
-  - [PTB-XL Database](https://physionet.org/content/ptb-xl/1.0.3/)
-  - [MIMIC-IV-ECG](https://physionet.org/content/mimic-iv-ecg/1.0/)
-  - [PhysioNet Challenge 2021](https://physionet.org/content/challenge-2021/1.0.3/)
-  - [CPSC 2018](https://www.google.com/search?q=https://www.kaggle.com/datasets/api/competitions/cpsc-2018)
-  - [Chapman-Shaoxing](https://www.google.com/search?q=https://www.kaggle.com/datasets/yuty2022/chapmanshaoxing-ecg)
+- [PTB-XL Database](https://physionet.org/content/ptb-xl/1.0.3/) - 21,837 clinical ECG records
+- [MIMIC-IV-ECG](https://physionet.org/content/mimic-iv-ecg/1.0/) - 800K+ ECG recordings
+- [PhysioNet Challenge 2021](https://physionet.org/content/challenge-2021/1.0.3/) - Multi-database ECG
+- [CPSC 2018](https://www.kaggle.com/competitions/cpsc-2018) - Arrhythmia classification challenge
+- [Chapman-Shaoxing](https://www.kaggle.com/datasets/yuty2022/chapmanshaoxing-ecg) - Large-scale 12-lead ECG
 
-**EMG Datasets:**
+#### EMG Datasets
 
-  - [EPN-612 Dataset](https://zenodo.org/records/4421500)
-  - [NinaPro Database](https://ninapro.hevs.ch/instructions/DB6.html)
+- [EPN-612 Dataset](https://zenodo.org/records/4421500) - 612 hand gestures
+- [NinaPro Database DB6](https://ninapro.hevs.ch/instructions/DB6.html) - HD-sEMG recordings
 
-\</details\>
+</details>
 
-\<details\>
-\<summary\>\<b\>Data Format Specifications\</b\>\</summary\>
+<details>
+<summary><b>Data Format Specifications</b></summary>
 
-**HDF5 Structure:**
+#### HDF5 Structure
 
 ```python
+# Single-label classification
 {
-    'data': (N, C, T),  # Signal data: float32
-    'label': (N,)       # Labels: int64 (for single-label)
-    # 'label': (N, K)   # Labels: float32/int (for multi-label)
+    'data': (N, C, T),   # Signal data: float32
+    'label': (N,)        # Labels: int64
+}
+
+# Multi-label classification
+{
+    'data': (N, C, T),   # Signal data: float32
+    'label': (N, K)      # Multi-hot labels: float32
 }
 ```
 
-Where: `N` = samples, `C` = channels, `T` = time points
+**Dimensions:**
+- `N` = Number of samples
+- `C` = Number of channels
+- `T` = Time points
+- `K` = Number of classes (multi-label only)
 
-**Signal Specifications:**
+#### Signal Specifications
 
 | Signal | Channels | Length | Sampling Rate | Normalization |
 |--------|----------|--------|---------------|---------------|
-| ECG | 12 | 2048 | 500 Hz | MinMax [-1,1] or Z-score |
-| EMG | 8 | 1024 | 200-2000 Hz | Max-abs or Z-score |
+| **ECG** | 12 | 2048 | 500 Hz | MinMax [-1,1] or Z-score |
+| **EMG** | 8 | 1024 | 200-2000 Hz | Max-abs or Z-score |
 
-\</details\>
+</details>
 
 ### 🔄 Preprocessing Examples
 
-\<details\>
-\<summary\>\<b\>ECG Preprocessing (PTB-XL - Single-Label)\</b\>\</summary\>
+<details>
+<summary><b>ECG Preprocessing (PTB-XL - Single-Label)</b></summary>
 
 ```bash
-# Download and preprocess PTB-XL
+# Download PTB-XL dataset
 wget -r -N -c -np https://physionet.org/files/ptb-xl/1.0.3/
+
+# Preprocess for single-label classification
 python ECG/ptbxl_finetune.py
 ```
 
-Output: `train.h5`, `val.h5`, `test.h5` with shape `(N, 12, 2048)` and label shape `(N,)`.
+**Output files:**
+- `train.h5` - Training data with shape `(N, 12, 2048)`
+- `val.h5` - Validation data
+- `test.h5` - Test data
 
-\</details\>
+**Label format:** `(N,)` with 5 superclasses (NORM, MI, STTC, CD, HYP)
 
-\<details\>
-\<summary\>\<b\>ECG Preprocessing (CPSC / Shaoxing - Multi-Label)\</b\>\</summary\>
+</details>
+
+<details>
+<summary><b>ECG Preprocessing (CPSC 2018 - Multi-Label)</b></summary>
 
 ```bash
-# Download CPSC 2018 dataset and preprocess
-python ECG/cpsc_multillabel.py
+# Preprocess CPSC 2018 dataset
+python ECG/cpsc_multilabel.py
+```
 
-# Download Chapman-Shaoxing dataset and preprocess
+**Output files:**
+- `cpsc_9class_train.h5` - Training data
+- `cpsc_9class_val.h5` - Validation data
+- `cpsc_9class_test.h5` - Test data
+- `cpsc_9class_info.json` - Dataset metadata
+- `label_map.json` - Class mappings
+- `record_splits.json` - Record-level split info
+
+**Label format:** `(N, 9)` with 9 official CPSC classes
+
+</details>
+
+<details>
+<summary><b>ECG Preprocessing (Chapman-Shaoxing - Multi-Label)</b></summary>
+
+```bash
+# Preprocess Chapman-Shaoxing dataset
 python ECG/shaoxing_multilabel.py
 ```
 
-Output: `train.h5`, `val.h5`, `test.h5` with label shape `(N, num_classes)`.
+**Output files:**
+- `train.h5` - Training data
+- `val.h5` - Validation data
+- `test.h5` - Test data
+- `dataset_info.json` - Metadata
+- `record_splits.json` - Split information
 
-\</details\>
+**Label format:** `(N, 4)` with 4 merged classes (SB, AFIB, GSVT, SR)
 
-\<details\>
-\<summary\>\<b\>EMG Preprocessing (EPN-612)\</b\>\</summary\>
+</details>
+
+<details>
+<summary><b>EMG Preprocessing (EPN-612)</b></summary>
 
 ```bash
 # Download from Zenodo and preprocess
 python EMG/epn_finetune.py
 ```
 
-Output: `epn612_train_set.h5`, `epn612_val_set.h5`, `epn612_test_set.h5` with shape `(N, 8, 1024)`.
+**Output files:**
+- `epn612_train_set.h5` - Training set `(N, 8, 1024)`
+- `epn612_val_set.h5` - Validation set
+- `epn612_test_set.h5` - Test set
 
-\</details\>
+**Label format:** `(N,)` with 6 gesture classes
 
-### 🎯 Training
+</details>
 
-#### Pretraining
+---
+
+## 🎯 Training
+
+### Pretraining
+
+<details>
+<summary><b>ECG Pretraining</b></summary>
 
 ```bash
-# ECG Pretraining
+# Edit ECG/pretrain_ecg.sh to set data paths
 bash ECG/pretrain_ecg.sh
+```
 
-# EMG Pretraining  
+**Key parameters:**
+```bash
+--mask_ratio 0.7                    # Mask 70% of patches
+--masking_strategy frequency_guided # Use frequency-guided masking
+--importance_ratio 0.7              # Balance importance vs randomness
+--epochs 100                        # Pretraining epochs
+```
+
+</details>
+
+<details>
+<summary><b>EMG Pretraining</b></summary>
+
+```bash
+# Edit EMG/pretrain_emg.sh to set data paths
 bash EMG/pretrain_emg.sh
 ```
 
-#### Fine-tuning
-
-**Single-Label Classification**
-
+**Key parameters:**
 ```bash
-# Standard Fine-tuning
-bash ECG/finetune_ecg.sh  # For ECG
-bash EMG/finetune_emg.sh  # For EMG
+--mask_ratio 0.6                    # Mask 60% of patches
+--in_channels 8                     # 8-channel EMG
+--wave_kernel_size 16               # Smaller kernel for EMG
 ```
 
-**Multi-Label Classification**
-This repository uses `finetune_multilabel.py` for multi-label classification tasks, such as those on the CPSC or Shaoxing datasets. First, prepare your data using the corresponding preprocessing scripts (e.g., `ECG/cpsc_multilabel.py`, `ECG/shaoxing_multilabel.py`).
+</details>
 
-Then, run the multi-label fine-tuning script. An example configuration (similar to `ECG/shaoxing_multilabel.sh`) is provided below:
+---
+
+### Fine-tuning
+
+#### Single-Label Classification
+
+<details>
+<summary><b>Standard Fine-tuning (ECG/EMG)</b></summary>
 
 ```bash
-# Launch distributed fine-tuning for multi-label ECG
+# ECG fine-tuning (PTB-XL)
+bash ECG/finetune_ecg.sh
+
+# EMG fine-tuning (EPN-612)
+bash EMG/finetune_emg.sh
+```
+
+**Example command:**
+```bash
+torchrun --nproc_per_node=4 finetune.py \
+  --train_file path/to/train.h5 \
+  --val_file path/to/val.h5 \
+  --test_file path/to/test.h5 \
+  --pretrained_path pretrained/ecg.pth \
+  --task_type classification \
+  --num_classes 5 \
+  --batch_size 16 \
+  --epochs 50 \
+  --lr 1e-4
+```
+
+</details>
+
+#### Multi-Label Classification
+
+<details>
+<summary><b>Multi-Label Fine-tuning (CPSC/Shaoxing)</b></summary>
+
+This repository uses `finetune_multilabel.py` for multi-label classification tasks. First, prepare your data using the corresponding preprocessing scripts.
+
+**CPSC 2018 Example:**
+
+```bash
+# Edit paths in ECG/cpsc_multilabel.sh
+bash ECG/cpsc_multilabel.sh
+```
+
+**Shaoxing Example:**
+
+```bash
+# Edit paths in ECG/shaoxing_multilabel.sh
+bash ECG/shaoxing_multilabel.sh
+```
+
+**Manual command:**
+
+```bash
 NUM_GPUS=4
 torchrun --nproc_per_node=${NUM_GPUS} finetune_multilabel.py \
-  --train_file "path/to/shaoxing/train.h5" \
-  --val_file "path/to/shaoxing/val.h5" \
-  --test_file "path/to/shaoxing/test.h5" \
+  --train_file "path/to/train.h5" \
+  --val_file "path/to/val.h5" \
+  --test_file "path/to/test.h5" \
   --pretrained_path "path/to/pretrained_ecg/best_model.pth" \
   \
   `# Task Configuration` \
   --task_type multilabel \
   --threshold 0.3 \
   \
-  `# ECG Model Architecture (must match pretrained model)` \
+  `# Model Architecture` \
   --in_channels 12 \
   --max_level 3 \
   --wave_kernel_size 24 \
@@ -239,68 +440,242 @@ torchrun --nproc_per_node=${NUM_GPUS} finetune_multilabel.py \
   --embed_dim 384 \
   --depth 8 \
   --num_heads 12 \
+  --mlp_ratio 4.0 \
+  --dropout 0.1 \
   \
-  `# Fine-tuning Parameters` \
+  `# Training Parameters` \
   --batch_size 16 \
-  --epochs 10 \
+  --epochs 50 \
   --lr 1e-4 \
+  --weight_decay 1e-4 \
   --scheduler cosine \
   --warmup_epochs 5 \
+  --grad_clip 1.0 \
+  --use_amp \
   \
-  `# Other Settings` \
+  `# Classification Head` \
+  --pooling mean \
+  --head_hidden_dim 512 \
+  --head_dropout 0.2 \
+  --label_smoothing 0.1 \
+  \
+  `# Output` \
   --seed 42 \
-  --output_dir "./finetune_ecg_multilabel_output"
+  --output_dir "./checkpoints_multilabel"
 ```
 
-**Zero-Shot Evaluation (Linear Probing)**
+**Key Parameters for Multi-Label:**
+- `--task_type multilabel` - Enable multi-label classification
+- `--threshold 0.3` - Decision threshold (adjust based on validation)
+- `--label_smoothing 0.1` - Regularization for better generalization
+
+</details>
+
+#### Zero-Shot Evaluation
+
+<details>
+<summary><b>Linear Probing</b></summary>
+
+Evaluate pretrained representations by freezing the encoder and training only the classification head:
 
 ```bash
-# Zero-Shot Evaluation (Linear Probing)
 torchrun --nproc_per_node=4 finetune.py \
-  --pretrained_path ./pretrained/ecg.pth \
-  --freeze_encoder \  # Freezes encoder for linear probing
+  --train_file path/to/train.h5 \
+  --val_file path/to/val.h5 \
+  --test_file path/to/test.h5 \
+  --pretrained_path pretrained/ecg.pth \
+  --freeze_encoder \
   --num_classes 5 \
-  --epochs 10
+  --epochs 10 \
+  --lr 1e-3
 ```
 
------
+</details>
 
-## 🔧 Key Parameters
+---
 
-\<details\>
-\<summary\>\<b\>Model Configuration\</b\>\</summary\>
+## 🔧 Configuration Guide
 
-| Parameter | Description | Options |
-|-----------|-------------|---------|
-| `--in_channels` | Input channels | 12 (ECG), 8 (EMG) |
-| `--max_level` | Wavelet decomposition levels | 3 (default) |
-| `--wavelet_names` | Wavelet families | `db4 db6 sym4 coif2` |
-| `--embed_dim` | Embedding dimension | 256/384/512 |
-| `--depth` | Transformer layers | 6/8/12 |
+### Model Configuration
+
+<details>
+<summary><b>Architecture Parameters</b></summary>
+
+| Parameter | Description | Options | Recommendation |
+|-----------|-------------|---------|----------------|
+| `--in_channels` | Input channels | 12 (ECG), 8 (EMG) | Match your data |
+| `--max_level` | Wavelet decomposition levels | 2-4 | 3 (default) |
+| `--wave_kernel_size` | Wavelet kernel size | 16-32 | 24 (ECG), 16 (EMG) |
+| `--wavelet_names` | Wavelet families | db, sym, coif, bior | See tips below |
+| `--embed_dim` | Embedding dimension | 128-768 | 256/384/512 |
+| `--depth` | Transformer layers | 4-12 | 6/8/12 |
+| `--num_heads` | Attention heads | 4-16 | 8/12 |
+| `--patch_size` | Temporal patch size | 20-128 | 64 (ECG), 32 (EMG) |
 
 **💡 Wavelet Selection Tips:**
 
-  - ECG: `db4 db6 sym4 coif2` - Optimal for QRS complexes
-  - EMG: `sym4 sym5 db6 coif3 bior4.4` - Best for muscle patterns
-  - Custom: Experiment with different combinations for your data\!
+| Signal Type | Recommended Wavelets | Rationale |
+|-------------|---------------------|-----------|
+| **ECG** | `db4 db6 sym4 coif2` | Optimal for QRS complex detection |
+| **EMG** | `sym4 sym5 db6 coif3 bior4.4` | Best for muscle activation patterns |
+| **Custom** | Experiment with combinations | Domain-specific optimization |
 
-\</details\>
+</details>
 
-\<details\>
-\<summary\>\<b\>Training Configuration\</b\>\</summary\>
+<details>
+<summary><b>Training Configuration</b></summary>
 
-| Parameter | Description | Default |
-|-----------|-------------|---------|
-| `--mask_ratio` | Masking ratio | 0.7 (ECG), 0.6 (EMG) |
-| `--masking_strategy` | Masking type | `frequency_guided` |
-| `--freeze_encoder` | Zero-shot mode | False |
-| `--label_smoothing` | Label smoothing | 0.1 |
-| `--task_type` | Fine-tuning task type | `multilabel` or `classification` |
-| `--threshold` | Prediction threshold for multi-label | 0.3 or 0.5 |
+#### Pretraining Parameters
 
-\</details\>
+| Parameter | Description | ECG | EMG |
+|-----------|-------------|-----|-----|
+| `--mask_ratio` | Masking ratio | 0.7 | 0.6 |
+| `--masking_strategy` | Masking type | `frequency_guided` | `frequency_guided` |
+| `--importance_ratio` | Importance weight | 0.7 | 0.6 |
+| `--epochs` | Training epochs | 100 | 100 |
+| `--lr` | Learning rate | 2e-5 | 5e-5 |
 
------
+#### Fine-tuning Parameters
+
+| Parameter | Description | Default | Range |
+|-----------|-------------|---------|-------|
+| `--batch_size` | Batch size per GPU | 16 | 8-64 |
+| `--epochs` | Training epochs | 50 | 20-100 |
+| `--lr` | Learning rate | 1e-4 | 1e-5 to 1e-3 |
+| `--weight_decay` | L2 regularization | 1e-4 | 1e-5 to 1e-3 |
+| `--scheduler` | LR scheduler | `cosine` | cosine/step/plateau |
+| `--warmup_epochs` | Warmup epochs | 5 | 0-10 |
+| `--grad_clip` | Gradient clipping | 1.0 | 0.5-2.0 |
+
+#### Multi-Label Specific
+
+| Parameter | Description | Default | Notes |
+|-----------|-------------|---------|-------|
+| `--threshold` | Decision threshold | 0.3-0.5 | Tune on validation set |
+| `--label_smoothing` | Label smoothing | 0.1 | 0.0-0.2 for regularization |
+| `--use_class_weights` | Class balancing | False | Enable for imbalanced data |
+
+</details>
+
+<details>
+<summary><b>Hardware and Performance</b></summary>
+
+#### Recommended Hardware
+
+| Task | Minimum | Recommended | Optimal |
+|------|---------|-------------|---------|
+| **Pretraining** | 4x RTX 3090 | 4x A100 40GB | 8x A100 80GB |
+| **Fine-tuning** | 4x RTX 3090 | 2-4x RTX 3090 | 4x A100 40GB |
+| **Inference** | 4x RTX 3060 | 4x RTX 3090 | 4x A100 |
+
+#### Performance Tips
+
+```bash
+# Enable mixed precision for 2x speedup
+--use_amp
+
+# Increase batch size with gradient accumulation
+--batch_size 8 --grad_accumulation_steps 4  # Effective batch size: 32
+
+# Multi-GPU training
+torchrun --nproc_per_node=4 [script.py]
+```
+
+</details>
+
+---
+
+## 📈 Evaluation Metrics
+
+<details>
+<summary><b>Single-Label Metrics</b></summary>
+
+- **Accuracy**: Overall classification accuracy
+- **Precision/Recall/F1**: Per-class and macro-averaged
+- **Confusion Matrix**: Visual representation of predictions
+
+</details>
+
+<details>
+<summary><b>Multi-Label Metrics</b></summary>
+
+#### Sample-Based Metrics
+- **Precision (Micro/Macro)**: Correct predictions among all positive predictions
+- **Recall (Micro/Macro)**: Correct predictions among all actual positives
+- **F1-Score (Micro/Macro)**: Harmonic mean of precision and recall
+
+#### Ranking-Based Metrics
+- **AUROC (Micro/Macro)**: Area under ROC curve
+- **Average Precision (Micro/Macro)**: Area under precision-recall curve
+
+#### Set-Based Metrics
+- **Hamming Loss**: Fraction of incorrectly predicted labels
+- **Jaccard Score (Micro/Macro)**: Intersection over union of predictions
+
+**Understanding Micro vs Macro:**
+- **Micro**: Aggregate across all samples, then compute metric (weighted by frequency)
+- **Macro**: Compute metric per class, then average (equal weight per class)
+
+</details>
+
+---
+
+## 🐛 Troubleshooting
+
+<details>
+<summary><b>Common Issues</b></summary>
+
+### Out of Memory (OOM)
+
+**Symptoms:** CUDA out of memory error
+
+**Solutions:**
+```bash
+# Reduce batch size
+--batch_size 8
+
+# Enable gradient checkpointing
+--use_gradient_checkpointing
+
+# Reduce model size
+--embed_dim 256 --depth 6 --num_heads 8
+```
+
+### Poor Performance
+
+**Symptoms:** Low accuracy or slow convergence
+
+**Solutions:**
+```bash
+# Increase training duration
+--epochs 100
+
+# Adjust learning rate
+--lr 5e-5 --warmup_epochs 10
+
+# Stronger regularization
+--weight_decay 1e-3 --dropout 0.2 --head_dropout 0.3 --label_smoothing 0.1
+
+# Try different thresholds (multi-label)
+--threshold 0.2  # More sensitive
+--threshold 0.5  # More specific
+```
+
+### Data Loading Issues
+
+**Check HDF5 file structure:**
+```bash
+python -c "import h5py; f=h5py.File('train.h5','r'); print(list(f.keys())); print(f['data'].shape, f['label'].shape)"
+```
+
+**Validate data format:**
+```bash
+python dataset_multilabel.py --data_files train.h5 --task multilabel
+```
+
+</details>
+
+---
 
 ## 📖 Citation
 
@@ -315,27 +690,46 @@ If you find our work helpful, please cite:
 }
 ```
 
------
+---
 
 ## 🤝 Contact & Contributions
 
-**Lead Author**: Yanlong Chen  
-**Email**: [yanlchen@student.ethz.ch](mailto:yanlchen@student.ethz.ch)
+<div align="center">
 
-We welcome contributions\! Feel free to:
+**Lead Author:** Yanlong Chen  
+**Email:** [yanlchen@student.ethz.ch](mailto:yanlchen@student.ethz.ch)
 
-  - 🐛 Report bugs via [Issues](https://github.com/ForeverBlue816/PhysioWave/issues)
-  - 💡 Suggest enhancements
-  - 🔧 Submit Pull Requests
+</div>
 
------
+We welcome contributions! Feel free to:
+
+- 🐛 [Report bugs](https://github.com/ForeverBlue816/PhysioWave/issues)
+- 💡 Suggest enhancements
+- 🔧 Submit Pull Requests
+- ⭐ Star this repository if you find it useful!
+
+---
 
 ## 🙏 Acknowledgments
 
-We thank the authors of the datasets used in this work and the PyTorch team for their excellent framework.
+We thank:
+- The authors of PTB-XL, MIMIC-IV-ECG, CPSC 2018, Chapman-Shaoxing, and EPN-612 datasets
+- The PyTorch team for their excellent framework
+- The open-source community for inspiration and tools
 
------
+---
 
-\<div align="center"\>
-\<sub\>Built with ❤️ for the physiological signal processing community\</sub\>
-\</div\>
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+---
+
+<div align="center">
+
+<sub>Built with ❤️ for the physiological signal processing community</sub>
+
+[![GitHub stars](https://img.shields.io/github/stars/ForeverBlue816/PhysioWave?style=social)](https://github.com/ForeverBlue816/PhysioWave/stargazers)
+[![GitHub forks](https://img.shields.io/github/forks/ForeverBlue816/PhysioWave?style=social)](https://github.com/ForeverBlue816/PhysioWave/network/members)
+
+</div>
