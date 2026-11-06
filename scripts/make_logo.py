@@ -25,17 +25,18 @@ MAUVE, GOLD = "#C3609E", "#DCA94F"
 
 
 def band(x0, x1, y, amp, cycles, fold_x, fold_y, n=120):
-    """A sine band from x0 to x1, then a smooth bend into the fold point."""
+    """A sine band from x0 to x1 that tapers to a flat line, then a long S-curve
+    into the fold, level where it leaves and level where it arrives."""
     pts = []
     for i in range(n + 1):
         t = i / n
         x = x0 + (x1 - x0) * t
-        env = math.sin(math.pi * min(1.0, t * 1.15)) ** 0.6     # taper at both ends
+        env = math.sin(math.pi * min(1.0, t * 1.12)) ** 0.7     # taper at both ends
         pts.append((x, y + amp * env * math.sin(2 * math.pi * cycles * t)))
     d = "M" + " L".join(f"{x:.2f} {yy:.2f}" for x, yy in pts)
-    # cubic into the fold: leave horizontally, arrive horizontally
-    cx = (x1 + fold_x) / 2
-    d += f" C{cx:.2f} {y:.2f} {cx:.2f} {fold_y:.2f} {fold_x:.2f} {fold_y:.2f}"
+    span = fold_x - x1
+    d += (f" C{x1 + 0.55 * span:.2f} {y:.2f} {fold_x - 0.45 * span:.2f} {fold_y:.2f} "
+          f"{fold_x:.2f} {fold_y:.2f}")
     return d
 
 
@@ -54,30 +55,42 @@ def signal(x0, x1, y):
 
 
 def mark(ox=0.0, oy=0.0, s=1.0, uid="m"):
-    """The 128 x 128 mark, translated and scaled."""
-    fx, fy = 62.0, 66.0
+    """The 128 x 128 mark, translated and scaled.
+
+    Each band fades from its own colour to white over its curve into the
+    fold, so the three arrive as one white line and leave as the waveform;
+    no node marks the junction, only a soft glow.
+    """
+    x0, x1, fx, fy = 14.0, 37.0, 66.0, 66.0
     bands = [  # (y, amplitude, cycles, colour, width): fast detail to slow approximation
-        (40.0, 3.4, 5.0, PALE, 2.8),
-        (66.0, 5.5, 3.5, GOLD, 3.4),
-        (92.0, 7.0, 1.6, MAUVE, 3.6),
+        (38.0, 3.0, 4.5, PALE, 2.9),
+        (66.0, 5.0, 3.0, GOLD, 3.2),
+        (94.0, 6.5, 1.5, MAUVE, 3.4),
     ]
+    defs = [f'<linearGradient id="{uid}bg" x1="0" y1="0" x2="1" y2="1">'
+            f'<stop offset="0" stop-color="{INDIGO}"/><stop offset="1" stop-color="{INDIGO_DEEP}"/>'
+            f'</linearGradient>',
+            f'<linearGradient id="{uid}sheen" x1="0" y1="0" x2="0" y2="1">'
+            f'<stop offset="0" stop-color="#FFFFFF" stop-opacity="0.13"/>'
+            f'<stop offset="0.55" stop-color="#FFFFFF" stop-opacity="0"/></linearGradient>',
+            f'<radialGradient id="{uid}glow" cx="0.5" cy="0.5" r="0.5">'
+            f'<stop offset="0" stop-color="#FFFFFF" stop-opacity="0.32"/>'
+            f'<stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/></radialGradient>']
+    for k, (_y, _a, _c, col, _w) in enumerate(bands):
+        defs.append(f'<linearGradient id="{uid}b{k}" gradientUnits="userSpaceOnUse" '
+                    f'x1="{x1 - 2}" y1="0" x2="{fx}" y2="0">'
+                    f'<stop offset="0" stop-color="{col}"/>'
+                    f'<stop offset="1" stop-color="#FFFFFF"/></linearGradient>')
     g = [f'<g transform="translate({ox} {oy}) scale({s})">',
-         f'<defs><linearGradient id="{uid}bg" x1="0" y1="0" x2="1" y2="1">'
-         f'<stop offset="0" stop-color="{INDIGO}"/><stop offset="1" stop-color="{INDIGO_DEEP}"/>'
-         f'</linearGradient>'
-         f'<radialGradient id="{uid}glow" cx="0.5" cy="0.5" r="0.5">'
-         f'<stop offset="0" stop-color="#FFFFFF" stop-opacity="0.55"/>'
-         f'<stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/></radialGradient></defs>',
+         "<defs>" + "".join(defs) + "</defs>",
          f'<rect x="0" y="0" width="128" height="128" rx="30" fill="url(#{uid}bg)"/>',
-         # faint scale grid, three rows, like the subband rows of a decomposition
-         *[f'<line x1="14" y1="{y}" x2="56" y2="{y}" stroke="#FFFFFF" stroke-opacity="0.08" '
-           f'stroke-width="1"/>' for y, *_ in bands]]
-    for y, amp, cyc, col, wid in bands:
-        g.append(f'<path d="{band(14, 44, y, amp, cyc, fx, fy)}" fill="none" stroke="{col}" '
-                 f'stroke-width="{wid}" stroke-linecap="round" stroke-linejoin="round"/>')
-    g.append(f'<circle cx="{fx}" cy="{fy}" r="13" fill="url(#{uid}glow)"/>')
-    g.append(f'<circle cx="{fx}" cy="{fy}" r="5.2" fill="#FFFFFF"/>')
-    g.append(f'<path d="{signal(fx, 114, fy)}" fill="none" stroke="#FFFFFF" stroke-width="4.6" '
+         f'<rect x="0" y="0" width="128" height="128" rx="30" fill="url(#{uid}sheen)"/>',
+         f'<circle cx="{fx}" cy="{fy}" r="16" fill="url(#{uid}glow)"/>']
+    for k, (y, amp, cyc, _col, wid) in enumerate(bands):
+        g.append(f'<path d="{band(x0, x1, y, amp, cyc, fx, fy)}" fill="none" '
+                 f'stroke="url(#{uid}b{k})" stroke-width="{wid}" stroke-linecap="round" '
+                 f'stroke-linejoin="round"/>')
+    g.append(f'<path d="{signal(fx, 114, fy)}" fill="none" stroke="#FFFFFF" stroke-width="4.2" '
              f'stroke-linecap="round" stroke-linejoin="round"/>')
     g.append("</g>")
     return "\n".join(g)

@@ -10,7 +10,7 @@
 [![TPAMI](https://img.shields.io/badge/IEEE%20TPAMI-under%20review-6a5acd.svg)](#citation)
 [![NeurIPS 2025](https://img.shields.io/badge/NeurIPS-2025-blue.svg)](https://arxiv.org/abs/2506.10351)
 [![arXiv](https://img.shields.io/badge/arXiv-2506.10351-b31b1b.svg)](https://arxiv.org/abs/2506.10351)
-[![Hugging Face](https://img.shields.io/badge/%F0%9F%A4%97%20Models-PhysioWave--T-ffcc4d.svg)](https://huggingface.co/ForeverBlue)
+[![Hugging Face](https://img.shields.io/badge/%F0%9F%A4%97%20Collection-PhysioWave--T-ffcc4d.svg)](https://huggingface.co/collections/ForeverBlue/physiowave-t)
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.2+-ee4c2c.svg)](https://pytorch.org/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
@@ -42,7 +42,7 @@ rests on three ideas:
 
 ## Pretrained models
 
-All weights are on the Hugging Face Hub. Each model card lists the files, the validation metrics and a loading example.
+All weights are on the Hugging Face Hub, gathered in the [PhysioWave-T collection](https://huggingface.co/collections/ForeverBlue/physiowave-t). Each model card lists the files, the validation metrics and a loading example.
 
 | Model | Repository | Parameters | Routes (channels × rate) | Pretraining data |
 |---|---|---|---|---|
