@@ -78,7 +78,7 @@ from physiowave.eeg_c1.objective import (objective_equation,   # noqa: E402
 #: swapped (physiowave/{ecg,emg}_c1/model.py).
 SPECS = {
     "eeg": {
-        "label": "EEG", "tags": ["eeg"],
+        "label": "EEG", "tags": ["eeg", "physiowave", "physiowave-t", "foundation-model"],
         "intro": ("Masked dual-reconstruction pretraining on multi-montage EEG. One "
                   "shared transformer serves {n} electrode layouts through "
                   "route-specific wavelet frontends, and channel identity enters as a "
@@ -95,7 +95,7 @@ SPECS = {
         "raw_target": "z-scored volts", "names": "channel names",
     },
     "ecg": {
-        "label": "ECG", "tags": ["ecg", "electrocardiogram"],
+        "label": "ECG", "tags": ["ecg", "electrocardiogram", "physiowave", "physiowave-t", "foundation-model"],
         "intro": ("Masked dual-reconstruction pretraining on 12-lead and single-lead "
                   "ECG. One shared transformer serves {n} lead configurations "
                   "through route-specific wavelet frontends, and lead identity enters "
@@ -115,7 +115,7 @@ SPECS = {
         "raw_target": "the window-normalised waveform", "names": "lead names",
     },
     "emg": {
-        "label": "sEMG", "tags": ["emg", "semg", "electromyography"],
+        "label": "sEMG", "tags": ["emg", "semg", "electromyography", "physiowave", "physiowave-t", "foundation-model"],
         "intro": ("Masked dual-reconstruction pretraining on surface EMG from "
                   "wristbands, forearm arrays and high-density grids. One shared "
                   "transformer serves {n} electrode layouts through route-specific "
@@ -484,7 +484,9 @@ tags:
 library_name: pytorch
 ---
 
-# {spec['label']} C1 multi-route pretrained encoder
+# PhysioWave-T-{spec['label']}: multi-route pretrained {spec['label']} encoder
+
+One of the three **PhysioWave-T** encoders ([EEG](https://huggingface.co/ForeverBlue/EEG), [ECG](https://huggingface.co/ForeverBlue/ECG), [sEMG](https://huggingface.co/ForeverBlue/EMG)); the [RALF fusion model](https://huggingface.co/ForeverBlue/RALF-SeizeIT2) combines them. Code: <https://github.com/ForeverBlue816/PhysioWave>.
 
 {spec['intro'].format(n=nw)}
 

@@ -142,6 +142,8 @@ def model_card(repo_id: str, run: str, ck: dict, cfg: dict, results: dict, event
 license: apache-2.0
 tags:
   - multimodal
+  - physiowave
+  - physiowave-t
   - eeg
   - ecg
   - emg
@@ -151,7 +153,9 @@ tags:
 library_name: pytorch
 ---
 
-# PhysioWave-T + {fusion.upper() if fusion == 'ralf' else fusion}: {task} fusion model
+# PhysioWave-T-{fusion.upper() if fusion == 'ralf' else fusion}: multimodal seizure detection on SeizeIT2 (EEG + ECG + EMG)
+
+The **PhysioWave-T** multimodal model, built on the three released encoders ([EEG](https://huggingface.co/ForeverBlue/EEG), [ECG](https://huggingface.co/ForeverBlue/ECG), [sEMG](https://huggingface.co/ForeverBlue/EMG)). Code: <https://github.com/ForeverBlue816/PhysioWave>.
 
 Three independently pretrained C1 encoders -- EEG, ECG and sEMG -- fused by
 **{'RALF (Reliability-Aware Latent Fusion)' if fusion == 'ralf' else fusion}** for
