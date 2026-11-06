@@ -7,7 +7,6 @@
 
 # PhysioWave-T: Token-Efficient Wavelet Foundation Models for Biosignals
 
-[![TPAMI](https://img.shields.io/badge/IEEE%20TPAMI-under%20review-6a5acd.svg)](#citation)
 [![NeurIPS 2025](https://img.shields.io/badge/NeurIPS-2025-blue.svg)](https://arxiv.org/abs/2506.10351)
 [![arXiv](https://img.shields.io/badge/arXiv-2506.10351-b31b1b.svg)](https://arxiv.org/abs/2506.10351)
 [![Hugging Face](https://img.shields.io/badge/%F0%9F%A4%97%20Collection-PhysioWave--T-ffcc4d.svg)](https://huggingface.co/collections/ForeverBlue/physiowave-t)
@@ -55,6 +54,35 @@ Every encoder repository has two kinds of file:
 
 - **`<modality>_c1_encoder.pth`** holds the channel embedding and the shared Transformer. It loads onto any montage, and is the file to fine-tune from.
 - **`pretrain_<modality>_c1_moe_*.pth`** is the complete pretraining model: every route front end and both decoders. Use it to continue pretraining, or to fine-tune on a montage that *is* one of the routes.
+
+<details>
+<summary><b>Pretraining corpora</b> (processed training windows per corpus)</summary>
+
+| Modality | Corpus | Route (channels, Hz) | Windows |
+|---|---|---|---|
+| EEG | TUEG | 19, 256 | 13,710,516 |
+| EEG | HBN | 128, 512 | 1,352,818 |
+| EEG | FACED | 32, 512 | 129,268 |
+| EEG | TDBRAIN | 32, 512 | 86,991 |
+| EEG | M3CV | 64, 256 | 81,895 |
+| EEG | PhysioNet MI | 64, 256 | 36,933 |
+| EEG | HGD | 128, 512 | 23,074 |
+| ECG | PulseDB | 1, 250 | 4,992,774 |
+| ECG | Icentia11k | 1, 250 | 1,650,343 |
+| ECG | MIMIC-IV-ECG | 12, 500 | 748,592 |
+| ECG | CODE-15% | 12, 500 | 123,202 |
+| ECG | SPH | 12, 500 | 24,856 |
+| ECG | MedalCare-XL | 12, 500 | 15,446 |
+| ECG | Georgia | 12, 500 | 9,750 |
+| sEMG | emg2qwerty | 16, 2000 | 2,359,161 |
+| sEMG | emg2pose | 16, 2000 | 1,203,781 |
+| sEMG | CEMHSEY 8×8 | 64, 2000 | 662,710 |
+| sEMG | CEMHSEY 5×13 | 64, 2000 | 453,239 |
+| sEMG | Hyser | 64, 2000 | 274,188 |
+| sEMG | putEMG | 24, 2000 | 153,124 |
+
+Windows are 4 s (EEG), 10 s (ECG) and 1 s (sEMG). Each corpus keeps its own license; none is redistributed here.
+</details>
 
 ## Method
 
@@ -176,10 +204,11 @@ The examples come from four EEG routes spanning 19–128 channels, with 70 % of 
 git clone https://github.com/ForeverBlue816/PhysioWave.git
 cd PhysioWave
 conda create -n physiowave python=3.11 -y && conda activate physiowave
-pip install torch --index-url https://download.pytorch.org/whl/cu121   # PyTorch >= 2.2
-pip install -r requirements.txt
-pip install huggingface_hub          # to download the weights
+pip install torch --index-url https://download.pytorch.org/whl/cu121   # PyTorch >= 2.2, your CUDA
+pip install -e ".[hub]"              # the package + huggingface_hub; add ",data" for mne/wfdb
 ```
+
+The package needs only NumPy, SciPy, h5py, PyWavelets, scikit-learn and a few small utilities. Reading raw archives (EDF, PhysioNet) needs `mne` and `wfdb`, which training never imports.
 
 ## Quick start: fine-tune a pretrained encoder
 
@@ -211,28 +240,40 @@ class Meta:
 logits = model(torch.randn(2, len(CH), 1024), Meta())["logits"]     # [2, 2]
 ```
 
-For ECG and sEMG, swap in `physiowave.ecg_c1.downstream.ECGC1Downstream` with `ForeverBlue/ECG`, or `physiowave.emg_c1.downstream.EMGC1Downstream` with `ForeverBlue/EMG`. Pass real channel names, because the checkpoint's vocabulary hash is checked on load.
+For ECG and sEMG, swap in `physiowave.ecg_c1.downstream.ECGC1Downstream` with `ForeverBlue/ECG`, or `physiowave.emg_c1.downstream.EMGC1Downstream` with `ForeverBlue/EMG`. Pass real channel names, because the checkpoint's vocabulary hash is checked on load. Names the vocabulary does not know get a fresh embedding row each, trained as a montage adapter.
+
+The loading report is the contract: `frontend 0, patcher 0` is the expected line for a montage that is not one of the pretraining routes. To fine-tune *on* a route with its pretrained front end, take it out of the complete checkpoint:
+
+```bash
+python scripts/export_eeg_pretrained_encoder.py \
+    --checkpoint pretrain_eeg_c1_moe_best.pth --route E64_256 --output encoder_E64_256.pth
+```
 
 ## Reproducing the paper
 
 All runs were trained on the CINECA Leonardo cluster; [docs/cineca_setup.md](docs/cineca_setup.md) has the environment and Slurm jobs.
 
+The corpora are public but each has its own access terms, so they are not redistributed here. The download and preprocessing scripts under `scripts/` and `EEG/`, `ECG/`, `EMG/` say where each one comes from and turn it into the HDF5 windows the trainers read.
+
 ```bash
-# Pretraining, one modality each. Corpora and preprocessing: see the script headers
+# Pretraining, one modality each (multi-GPU; see the script headers for the corpora)
 bash EEG/pretrain_eeg_c1_moe.sh
 bash ECG/pretrain_ecg_c1_moe.sh
 bash EMG/pretrain_emg_c1_moe.sh
 
-# Downstream: MODE = ft | probe | scratch
-TASK=sleep_edf   MODE=ft bash EEG/finetune_eeg_c1.sh
-TASK=ptbxl       MODE=ft bash ECG/finetune_ecg_c1.sh
-TASK=epn612      MODE=ft bash EMG/finetune_emg_c1.sh
+# Downstream: MODE = ft | probe | scratch, PRETRAINED = an encoder file from the Hub
+TASK=sleep_edf    MODE=ft PRETRAINED=eeg_c1_encoder.pth bash EEG/finetune_eeg_c1.sh    # also physio_p300
+TASK=kaggleern    MODE=ft PRETRAINED=eeg_c1_encoder.pth bash EEG/finetune_eegpt_bench.sh # also bcic2a, bcic2b
+TASK=ptbxl_super  MODE=ft PRETRAINED=ecg_c1_encoder.pth bash ECG/finetune_ecg_c1.sh    # also ptbxl, cpsc2018, chapman
+TASK=epn612       MODE=ft PRETRAINED=emg_c1_encoder.pth bash EMG/finetune_emg_c1.sh    # also grabmyo, ninapro_db5, ...
 
-# Multimodal fusion on SeizeIT2: prepare windows, train, then event-level scoring
-python Fusion/seizeit2_prep.py --help
-python -m physiowave.fusion.train --config fusion/c1_ralf --output-dir runs/ralf \
-    --set encoders.eeg=<EEG ckpt> encoders.ecg=<ECG ckpt> encoders.emg=<EMG ckpt>
-python Fusion/seizeit2_events.py --help
+# Multimodal fusion on SeizeIT2: windows, training, then event-level scoring on the full recordings
+python Fusion/seizeit2_prep.py --raw-dir <SeizeIT2 BIDS root> --out-dir data/seizeit2
+python -m physiowave.fusion.train --config fusion/c1_ralf --output-dir runs/ralf_frozen \
+    --set data.tasks.seizeit2.dir=data/seizeit2 \
+          encoders.eeg=pretrain_eeg_c1_moe_best.pth encoders.ecg=pretrain_ecg_c1_moe_best.pth \
+          encoders.emg=pretrain_emg_c1_moe_epoch38.pth
+python Fusion/seizeit2_events.py --run-dir runs/ralf_frozen --raw-dir <SeizeIT2 BIDS root>
 ```
 
 | Topic | Document |
@@ -265,15 +306,9 @@ The original ECG and sEMG model, with its training and fine-tuning guide, is sti
 
 ## Citation
 
-```bibtex
-@article{chen2026physiowavet,
-  title   = {PhysioWave-T: Token-Efficient Wavelet Foundation Models for Biosignals},
-  author  = {Chen, Yanlong and Benatti, Simone and Benini, Luca and Guan, Cuntai and Li, Yawei},
-  journal = {IEEE Transactions on Pattern Analysis and Machine Intelligence},
-  note    = {Under review},
-  year    = {2026}
-}
+If you use this code or the released models, please cite PhysioWave:
 
+```bibtex
 @inproceedings{chen2025physiowave,
   title     = {PhysioWave: A Multi-Scale Wavelet-Transformer for Physiological Signal Representation},
   author    = {Chen, Yanlong and Orlandi, Mattia and Rapa, Pierangelo Maria and Benatti, Simone and Benini, Luca and Li, Yawei},

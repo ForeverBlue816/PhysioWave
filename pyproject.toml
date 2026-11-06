@@ -1,4 +1,45 @@
-# Tooling configuration for the TPAMI extension.
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "physiowave"
+version = "2.0.0"
+description = "PhysioWave-T: token-efficient wavelet foundation models for EEG, ECG and sEMG"
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.9"
+authors = [{ name = "Yanlong Chen" }]
+keywords = ["EEG", "ECG", "EMG", "biosignal", "foundation model", "wavelet", "self-supervised"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = [
+    "numpy>=1.26", "scipy>=1.12", "h5py>=3.10", "pandas>=2.2", "PyWavelets>=1.8",
+    "scikit-learn>=1.4", "matplotlib>=3.8", "tqdm>=4.66", "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+data = ["mne", "wfdb>=4.1"]          # raw-archive preprocessing (EDF, PhysioNet)
+hub = ["huggingface_hub"]            # downloading the released weights
+dev = ["pytest", "ruff"]
+
+[project.urls]
+Homepage = "https://github.com/ForeverBlue816/PhysioWave"
+Models = "https://huggingface.co/collections/ForeverBlue/physiowave-t"
+Paper = "https://arxiv.org/abs/2506.10351"
+
+[tool.setuptools]
+# The PhysioWave-T package plus the original top-level modules it builds on.
+py-modules = ["model", "wavelet_modules", "transformer_modules", "head_modules",
+              "channel_embedding", "dataset", "dataset_multilabel"]
+
+[tool.setuptools.packages.find]
+include = ["physiowave*"]
+
+# Packaging and tooling.
 # The repository had no formatter or test configuration; these settings are
 # deliberately light and apply only to the new package, the tests and the
 # configs. The original top-level modules are excluded so that nothing

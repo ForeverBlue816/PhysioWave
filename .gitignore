@@ -10,3 +10,9 @@ __pycache__/
 *.h5
 .DS_Store
 /data/
+
+# The journal manuscript, kept beside the code but not published with it
+/PhysioWave_T_TPAMI/
+# Working figures drawn locally; the paper figures live in assets/ and docs/runs/
+/figures/*
+!/figures/fig_wavelet.*

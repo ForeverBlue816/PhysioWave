@@ -5,10 +5,11 @@ Draw the PhysioWave series logo: assets/logo/{mark,banner_light,banner_dark}.svg
 
     python scripts/make_logo.py
 
-The mark is scale folding made visible: three wavelet bands -- a fast,
-a middle and a slow one, the detail and approximation scales -- run in from
-the left, meet in the fold, and leave as one physiological waveform with a
-QRS-like spike. Colours are the journal palette of the paper's figures.
+The mark is a Morlet wavelet. Read left to right it traces a W -- down, up to
+the central peak, down, up -- so the W of PhysioWave is the wavelet itself.
+The stroke swells at the peak and tapers into the tails, and its colour runs
+through the three scale colours of the paper's figures: pale blue, gold,
+mauve. One shape, no joins; it reads at 16 px and at 1024 px.
 """
 
 from __future__ import annotations
@@ -20,79 +21,68 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(ROOT, "assets", "logo")
 
 INDIGO, INDIGO_DEEP = "#3F4280", "#262A5C"
-LAVENDER, BLUE, PALE = "#8A84BF", "#7F97C2", "#BBD0E8"
-MAUVE, GOLD = "#C3609E", "#DCA94F"
+PALE, GOLD, MAUVE = "#BBD0E8", "#DCA94F", "#C3609E"
 
 
-def band(x0, x1, y, amp, cycles, fold_x, fold_y, n=120):
-    """A sine band from x0 to x1 that tapers to a flat line, then a long S-curve
-    into the fold, level where it leaves and level where it arrives."""
+def morlet(t: float, sigma: float = 0.62, freq: float = 1.0) -> float:
+    return math.exp(-t * t / (2 * sigma * sigma)) * math.cos(2 * math.pi * freq * t)
+
+
+def wavelet_ribbon(cx, cy, half_w, amp, w_min=1.6, w_max=7.4, n=260, t_max=1.55):
+    """A closed path: the Morlet curve offset along its normal by a width that
+    follows the Gaussian envelope, so the ribbon is thick at the peak and
+    fades into the tails."""
     pts = []
     for i in range(n + 1):
-        t = i / n
-        x = x0 + (x1 - x0) * t
-        env = math.sin(math.pi * min(1.0, t * 1.12)) ** 0.7     # taper at both ends
-        pts.append((x, y + amp * env * math.sin(2 * math.pi * cycles * t)))
-    d = "M" + " L".join(f"{x:.2f} {yy:.2f}" for x, yy in pts)
-    span = fold_x - x1
-    d += (f" C{x1 + 0.55 * span:.2f} {y:.2f} {fold_x - 0.45 * span:.2f} {fold_y:.2f} "
-          f"{fold_x:.2f} {fold_y:.2f}")
-    return d
-
-
-def signal(x0, x1, y):
-    """The folded output: baseline, a P wave, a QRS spike, a T wave."""
-    w = x1 - x0
-    k = lambda f: x0 + w * f
-    return (f"M{x0:.2f} {y:.2f} "
-            f"C{k(.06):.2f} {y:.2f} {k(.08):.2f} {y - 5:.2f} {k(.13):.2f} {y - 5:.2f} "
-            f"C{k(.18):.2f} {y - 5:.2f} {k(.20):.2f} {y:.2f} {k(.25):.2f} {y:.2f} "
-            f"L{k(.31):.2f} {y + 5:.2f} L{k(.38):.2f} {y - 30:.2f} L{k(.45):.2f} {y + 13:.2f} "
-            f"L{k(.50):.2f} {y:.2f} "
-            f"C{k(.58):.2f} {y:.2f} {k(.62):.2f} {y - 9:.2f} {k(.70):.2f} {y - 9:.2f} "
-            f"C{k(.78):.2f} {y - 9:.2f} {k(.82):.2f} {y:.2f} {k(.90):.2f} {y:.2f} "
-            f"L{x1:.2f} {y:.2f}")
+        t = -t_max + 2 * t_max * i / n
+        x = cx + half_w * t / t_max
+        y = cy - amp * morlet(t)
+        pts.append((t, x, y))
+    upper, lower = [], []
+    for k, (t, x, y) in enumerate(pts):
+        x0, y0 = pts[max(k - 1, 0)][1:]
+        x1, y1 = pts[min(k + 1, n)][1:]
+        dx, dy = x1 - x0, y1 - y0
+        norm = math.hypot(dx, dy) or 1.0
+        nx, ny = -dy / norm, dx / norm
+        env = math.exp(-t * t / (2 * 0.62 ** 2))
+        w = w_min + (w_max - w_min) * env ** 1.3
+        upper.append((x + nx * w / 2, y + ny * w / 2))
+        lower.append((x - nx * w / 2, y - ny * w / 2))
+    path = "M" + " L".join(f"{x:.2f} {y:.2f}" for x, y in upper)
+    path += " L" + " L".join(f"{x:.2f} {y:.2f}" for x, y in reversed(lower)) + " Z"
+    peak = (cx, cy - amp)
+    return path, peak
 
 
 def mark(ox=0.0, oy=0.0, s=1.0, uid="m"):
-    """The 128 x 128 mark, translated and scaled.
-
-    Each band fades from its own colour to white over its curve into the
-    fold, so the three arrive as one white line and leave as the waveform;
-    no node marks the junction, only a soft glow.
-    """
-    x0, x1, fx, fy = 14.0, 37.0, 66.0, 66.0
-    bands = [  # (y, amplitude, cycles, colour, width): fast detail to slow approximation
-        (38.0, 3.0, 4.5, PALE, 2.9),
-        (66.0, 5.0, 3.0, GOLD, 3.2),
-        (94.0, 6.5, 1.5, MAUVE, 3.4),
-    ]
-    defs = [f'<linearGradient id="{uid}bg" x1="0" y1="0" x2="1" y2="1">'
-            f'<stop offset="0" stop-color="{INDIGO}"/><stop offset="1" stop-color="{INDIGO_DEEP}"/>'
-            f'</linearGradient>',
-            f'<linearGradient id="{uid}sheen" x1="0" y1="0" x2="0" y2="1">'
-            f'<stop offset="0" stop-color="#FFFFFF" stop-opacity="0.13"/>'
-            f'<stop offset="0.55" stop-color="#FFFFFF" stop-opacity="0"/></linearGradient>',
-            f'<radialGradient id="{uid}glow" cx="0.5" cy="0.5" r="0.5">'
-            f'<stop offset="0" stop-color="#FFFFFF" stop-opacity="0.32"/>'
-            f'<stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/></radialGradient>']
-    for k, (_y, _a, _c, col, _w) in enumerate(bands):
-        defs.append(f'<linearGradient id="{uid}b{k}" gradientUnits="userSpaceOnUse" '
-                    f'x1="{x1 - 2}" y1="0" x2="{fx}" y2="0">'
-                    f'<stop offset="0" stop-color="{col}"/>'
-                    f'<stop offset="1" stop-color="#FFFFFF"/></linearGradient>')
+    """The 128 x 128 mark, translated and scaled."""
+    cx, cy = 64.0, 68.0
+    ribbon, (px, py) = wavelet_ribbon(cx, cy, half_w=50.0, amp=30.0)
     g = [f'<g transform="translate({ox} {oy}) scale({s})">',
-         "<defs>" + "".join(defs) + "</defs>",
-         f'<rect x="0" y="0" width="128" height="128" rx="30" fill="url(#{uid}bg)"/>',
-         f'<rect x="0" y="0" width="128" height="128" rx="30" fill="url(#{uid}sheen)"/>',
-         f'<circle cx="{fx}" cy="{fy}" r="16" fill="url(#{uid}glow)"/>']
-    for k, (y, amp, cyc, _col, wid) in enumerate(bands):
-        g.append(f'<path d="{band(x0, x1, y, amp, cyc, fx, fy)}" fill="none" '
-                 f'stroke="url(#{uid}b{k})" stroke-width="{wid}" stroke-linecap="round" '
-                 f'stroke-linejoin="round"/>')
-    g.append(f'<path d="{signal(fx, 114, fy)}" fill="none" stroke="#FFFFFF" stroke-width="4.2" '
-             f'stroke-linecap="round" stroke-linejoin="round"/>')
-    g.append("</g>")
+         "<defs>",
+         f'<linearGradient id="{uid}bg" x1="0" y1="0" x2="1" y2="1">'
+         f'<stop offset="0" stop-color="{INDIGO}"/><stop offset="1" stop-color="{INDIGO_DEEP}"/>'
+         f'</linearGradient>',
+         f'<linearGradient id="{uid}sheen" x1="0" y1="0" x2="0" y2="1">'
+         f'<stop offset="0" stop-color="#FFFFFF" stop-opacity="0.14"/>'
+         f'<stop offset="0.6" stop-color="#FFFFFF" stop-opacity="0"/></linearGradient>',
+         f'<linearGradient id="{uid}wave" gradientUnits="userSpaceOnUse" '
+         f'x1="{cx - 50}" y1="0" x2="{cx + 50}" y2="0">'
+         f'<stop offset="0" stop-color="{PALE}"/><stop offset="0.5" stop-color="{GOLD}"/>'
+         f'<stop offset="1" stop-color="{MAUVE}"/></linearGradient>',
+         f'<radialGradient id="{uid}glow" cx="0.5" cy="0.5" r="0.5">'
+         f'<stop offset="0" stop-color="{GOLD}" stop-opacity="0.45"/>'
+         f'<stop offset="1" stop-color="{GOLD}" stop-opacity="0"/></radialGradient>',
+         "</defs>",
+         f'<rect width="128" height="128" rx="30" fill="url(#{uid}bg)"/>',
+         f'<rect width="128" height="128" rx="30" fill="url(#{uid}sheen)"/>',
+         # the baseline the wavelet oscillates about
+         f'<line x1="16" y1="{cy}" x2="112" y2="{cy}" stroke="#FFFFFF" stroke-opacity="0.16" '
+         f'stroke-width="1.2" stroke-linecap="round"/>',
+         f'<ellipse cx="{px}" cy="{py + 10}" rx="30" ry="22" fill="url(#{uid}glow)"/>',
+         f'<path d="{ribbon}" fill="url(#{uid}wave)"/>',
+         "</g>"]
     return "\n".join(g)
 
 
@@ -102,7 +92,7 @@ def svg(w, h, body, title):
             f'{body}\n</svg>\n')
 
 
-FONT = ("font-family=\"'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif\"")
+FONT = "font-family=\"'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif\""
 
 
 def banner(dark: bool):
