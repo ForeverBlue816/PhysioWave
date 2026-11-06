@@ -11,6 +11,9 @@ h5py>=3.10.0
 pandas>=2.2.0
 PyWavelets>=1.8.0
 scikit-learn>=1.4.0
+# WFDB records (PhysioNet): ECG/preprocess_ecg_corpus.py and the ECG
+# fine-tuning preprocessors read them. Training reads HDF5 and never imports it.
+wfdb>=4.1.0
 
 # Training
 transformers>=4.38.0

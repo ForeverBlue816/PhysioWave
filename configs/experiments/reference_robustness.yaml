@@ -1,0 +1,20 @@
+# Reference and channel robustness evaluation.  Hard (lateralised) references
+# appear here only -- never as a training anchor, never as the default eval view.
+defaults: [pretrain/eeg]
+run_name: exp_reference_robustness
+experiment:
+  name: reference_robustness
+  tier: 3
+  seeds: [0, 1, 2]
+  reference_views:
+    standard: [original, common_average, linked_mastoids]
+    hard: [left_ear, right_ear, left_mastoid, random_channel]
+    offline_csd: true      # feed spline-CSD preprocessed signals as an input view
+  channel_conditions:
+    - {id: permute,        kind: permutation}
+    - {id: missing_10pct,  kind: missing, frac: 0.1}
+    - {id: missing_25pct,  kind: missing, frac: 0.25}
+    - {id: bad_channel,    kind: bad_channel, frac: 0.1}
+    - {id: unknown_montage, kind: drop_coordinates}
+    - {id: transfer_19_to_64, kind: montage_transfer, from: standard_1020_19, to: standard_1010_64}
+    - {id: transfer_64_to_19, kind: montage_transfer, from: standard_1010_64, to: standard_1020_19}

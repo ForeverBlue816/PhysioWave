@@ -1,0 +1,14 @@
+{
+  "checkpoint": "$PW_FAST_ROOT/runs/fusion/ralf_frozen_szo/best.pth",
+  "epoch": 5,
+  "run": "ralf_frozen_szo",
+  "git_commit": "dee0de2e333e08cd85e2068e234f7aaf6489b058",
+  "figure": "fig_reliability",
+  "generated_utc": "2026-10-16T08:12:02.836176+00:00",
+  "figure_text": [
+    "Corrupted inputs: the reliability head notices, and what each fusion keeps",
+    "Corrupted inputs: the reliability head notices, and what each fusion keeps"
+  ],
+  "paper_mode": true,
+  "severity": 0.7
+}

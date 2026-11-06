@@ -1,0 +1,40 @@
+defaults: [base, model/wast_tare]
+run_name: pretrain_semg
+# LIMB / skeletal sEMG only.  Facial EMG has different generators, bandwidth and
+# artefact structure and must not enter this corpus; the registry's `emg_region`
+# field is checked before training starts.
+data:
+  modality: semg
+  emg_region: limb
+  synthetic:
+    sampling_rate: 1000.0
+    window_samples: 2048
+model:
+  modality: semg
+  sampling_rate: 1000.0
+  # Wavelet tokenisation + token reduction, and nothing else.
+  #
+  # TARE is off here: it wants a 3-D coordinate and a montage label, and a
+  # forearm ring has neither -- every channel came back with the same embedding,
+  # which left the encoder invariant to permuting the channel axis.  On an array
+  # where *which* electrode fires is the discriminative signal that discards the
+  # signal.  A free vector per channel index is the honest replacement: no
+  # geometry claimed, identity preserved.  It is montage-specific by
+  # construction, which downstream sEMG (a fixed array per dataset) is anyway.
+  channel_embedding: channel_id
+  # The spatial branches are graph/spline operators over electrode coordinates.
+  # With no coordinates the geometric graph is uniform and the branch is a
+  # common-average reference wearing a Laplacian's clothes.
+  use_spatial_frontend: false
+  wast:
+    patch_size: 64
+    level: 3
+    wavelet: bior4.4
+  compression:
+    num_queries: 8
+    use_graph_bias: false   # no relation graph without the spatial frontend
+pretrain:
+  use_reference_consistency: false
+  use_covariance: false
+  lambda_wave: 0.5
+  lambda_spec: 0.05

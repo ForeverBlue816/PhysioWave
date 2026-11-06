@@ -140,6 +140,15 @@ class TimeSeriesDataset(Dataset):
             return len(np.unique(self._labels))
         return 0
 
+    def get_labels(self):
+        """Every label, in dataset order, or None when the file carries none.
+
+        Exposed so a trainer can weight the loss by class frequency without
+        walking the dataset through __getitem__, which would decode every
+        window to read one integer.
+        """
+        return self._labels
+
 
 class PretrainTimeSeriesDataset(TimeSeriesDataset):
     """

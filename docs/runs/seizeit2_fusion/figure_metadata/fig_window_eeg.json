@@ -1,0 +1,22 @@
+{
+  "checkpoint": "$PW_FAST_ROOT/runs/fusion/ralf_frozen_szo/best.pth",
+  "epoch": 5,
+  "run": "ralf_frozen_szo",
+  "git_commit": "dee0de2e333e08cd85e2068e234f7aaf6489b058",
+  "figure": "fig_window_eeg",
+  "generated_utc": "2026-10-16T08:12:00.031735+00:00",
+  "figure_text": [],
+  "paper_mode": true,
+  "recording": "sub-102_run-01",
+  "modality": "eeg",
+  "window_start_s": 24379.5,
+  "window_start_from_onset_s": 22.5,
+  "seconds": 4.0,
+  "fs": 256.0,
+  "samples": 1024,
+  "unit": "\u00b5V",
+  "labels": [
+    "BTEright",
+    "CROSStop"
+  ]
+}

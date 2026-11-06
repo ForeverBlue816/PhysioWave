@@ -1,0 +1,79 @@
+{
+  "checkpoint": "$PW_FAST_ROOT/runs/pretrain_emg_c1_moe/epoch38.pth",
+  "checkpoint_sha256": "fef902d266172fe1dc062ac5aff13db38f9628401d19e6f33e1f104743a52040",
+  "epoch": 39,
+  "global_step": 39000,
+  "channel_vocab_sha256": "5b4444a9bd5f7c5d48aa893e2ce0dd264fb9dce7bbea00a8401b9a641b57c356",
+  "modality": "emg",
+  "plotting_script_git_commit": "616e601a8ba44113d36e3f188bd639ed8a128b40",
+  "split": "val",
+  "mask_seed": 1234,
+  "manifest": "$SCRATCH/bio/emg/emg_c1_corpus/merged/manifest_val.jsonl",
+  "objective": {
+    "spec_weight": 0.5,
+    "raw_weight": 0.5,
+    "raw_beta": 0.5,
+    "fold_kl": 0.001,
+    "mask_before_frontend": true,
+    "normalize_spec_target": true
+  },
+  "objective_equation": "0.5*L_spec + 0.5*L_raw + 0.001*L_foldKL",
+  "metrics_last_epoch": 38,
+  "figure": "fig_mask_examples_by_dataset",
+  "generated_utc": "2026-10-13T06:59:17.890143+00:00",
+  "figure_text": [
+    "The actual masks the model was given, one fixed window per dataset",
+    "The actual masks the model was given, one fixed window per dataset"
+  ],
+  "paper_mode": true,
+  "examples": [
+    {
+      "dataset_id": "emg2pose",
+      "route_id": "W16_2000",
+      "subject_id": "user_8db8aaea3b",
+      "recording_id": "2022-09-29-1664438400-caca5-cv-emg-pose-train@2-recording-10_left",
+      "window_index": 0,
+      "mask_seed": 1234
+    },
+    {
+      "dataset_id": "emg2qwerty",
+      "route_id": "W16_2000",
+      "subject_id": "user_33259248",
+      "recording_id": "2020-12-15-1608091848-keystrokes-dca-study@1-d59e496f-fea0-4256-a4ac-2cd66fc6d60b#left",
+      "window_index": 0,
+      "mask_seed": 1234
+    },
+    {
+      "dataset_id": "hyser",
+      "route_id": "G64_2000",
+      "subject_id": "subject18",
+      "recording_id": "1dof_dataset/subject18_session1/1dof_raw_finger1_sample3#ED",
+      "window_index": 0,
+      "mask_seed": 1234
+    },
+    {
+      "dataset_id": "cemhsey_8x8",
+      "route_id": "G64_2000",
+      "subject_id": "gesture_S5",
+      "recording_id": "gesture_S5/S5_Day6_Trial5#g1",
+      "window_index": 0,
+      "mask_seed": 1234
+    },
+    {
+      "dataset_id": "cemhsey_5x13",
+      "route_id": "G64_2000",
+      "subject_id": "gesture_S5",
+      "recording_id": "gesture_S5/S5_Day6_Trial5#g4",
+      "window_index": 0,
+      "mask_seed": 1234
+    },
+    {
+      "dataset_id": "putemg",
+      "route_id": "A24_2000",
+      "subject_id": "putemg_48",
+      "recording_id": "emg_force-48-bias-2018-04-23-12-40-54-150",
+      "window_index": 0,
+      "mask_seed": 1234
+    }
+  ]
+}

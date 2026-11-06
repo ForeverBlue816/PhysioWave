@@ -1,0 +1,106 @@
+# P300 (ERP-BCI) on a C1 pretrained encoder.
+#
+# WHAT TRANSFERS IS THE TRANSFORMER, AND THAT IS THE QUESTION -- the same
+# arrangement as Sleep-EDF, on purpose. This montage gets its OWN wavelet
+# frontend and patcher, freshly initialised, and what comes from pretraining is
+# the channel-name embedding, its gate, and the shared transformer.
+#
+# It could be otherwise: erpbci's electrodes are 62 of E64_256's 64 slots, and
+# putting them there would carry the pretrained frontend and patcher across as
+# well. That is a stronger transfer and a weaker experiment. With a fresh
+# frontend both downstream tasks ask the same one question -- does the shared
+# transformer carry anything -- and neither can answer it with a filter bank
+# that came along for the ride.
+#
+# The consequences, none of them subtle:
+#
+#   * ALL 64 recorded electrodes are used. Nothing is placed in slots, so
+#     P9/P10 need no alias and TP9/TP10 are not missing: the route's montage
+#     stops being a constraint. Build the split with --channels 64.
+#   * patch_samples is a free choice again rather than the route's 128.
+#   * the frontend is 64 electrodes' worth of fresh filter banks, and so is the
+#     from-scratch control's. The comparison is between the same architectures.
+#
+#   python -m physiowave.train.finetune_main --config finetune/eeg_c1_p300 \
+#       --data-dir $PW_DATA_EEG/p300_f0 --num-classes 2 \
+#       --set model.eeg_c1.pretrained=<exported.pth>
+#
+# THE CONTROL is the same command with that --set left off. Run both.
+
+trainer: finetune
+run_name: finetune_eeg_c1_p300
+
+data:
+  modality: eeg
+
+model:
+  name: eeg_c1
+  # Shared with pretraining and not free: these describe the checkpoint being
+  # loaded, and a mismatch is refused rather than reshaped.
+  # 512/8/8, matching configs/pretrain/eeg_c1_moe.yaml as of 2026-08-30. These
+  # three numbers are not a choice here: the exported encoder's weights have
+  # these shapes, and a mismatch is a shape error at load time. They move
+  # together with the pretraining config or the transfer does not happen.
+  embed_dim: 512
+  depth: 8
+  num_heads: 8
+  mlp_ratio: 4.0
+  norm: rmsnorm
+  ffn: swiglu
+  qk_norm: true
+  max_level: 3
+  wave_kernel_size: 16
+  wavelet_names: [sym4, sym5, db6, sym8, db8]
+  wave_init_mode: pad
+  use_separate_channel: true
+  fold_synthesis: 3
+  fold_gamma: 0.1
+  channel_encoding: id
+  channel_embed_dim: 64
+  # Fine-tuning is a different regime from masked pretraining: the input is no
+  # longer corrupted, the objective is a small labelled set, and dropout is
+  # doing what it is for.
+  dropout: 0.1
+
+  eeg_c1:
+    # No route_id: this montage gets its own frontend, as Sleep-EDF does.
+    # in_channels, window_samples, sampling_rate and channel_names
+    # come from the HDF5. Naming them here would be a second copy.
+    patch_samples: 64           # 250 ms at 256 Hz -- EEGPT's patch duration at
+                                # this rate, and the timescale a P300 lives on.
+                                # 512/64 = 8 positions. Costs 64 x 8 = 512
+                                # tokens against the route's 62 x 4, so
+                                # --set model.eeg_c1.patch_samples=128 halves
+                                # the sequence if the run is too slow.
+
+    # Mean over the tokens, LayerNorm, dropout, one Linear. heads.py still
+    # carries the other shapes -- pool=stat (attentive statistics pooling),
+    # pool=time, pool=attn, channel_pool, head_max_norm, spatial_filter -- and
+    # each is one --set away, so the ablations survive while the default stays
+    # the head this evaluation has always had.
+    pool: mean
+    head_dropout: 0.1
+    pretrained: null           # set it, or leave it for the control
+
+# EEGPT's downstream budget, because the point of this run is to sit next to
+# their row. Their linear_probe_EEGPT_PhysioP300.py: 100 epochs, batch 64,
+# AdamW weight_decay=0.01, OneCycleLR max_lr=8e-4 pct_start=0.2, a plain
+# CrossEntropyLoss, AUROC as the monitor.
+train:
+  epochs: 100
+  warmup_ratio: 0.2            # OneCycle's pct_start, in steps not epochs, so
+                               # it survives a change of epoch count
+  lr: 5.0e-4                   # their 8e-4 trains ~33k probe parameters on a
+                               # frozen encoder; this figure updates all 15M,
+                               # so it is scaled down. The probe command passes
+                               # --lr 1e-3 and is the one comparable to theirs.
+  min_lr_ratio: 0.01
+  weight_decay: 0.01           # theirs. 0.05 was ours and nothing chose it.
+  batch_size: 64
+  precision: bf16
+  grad_clip: 1.0
+  label_smoothing: 0.0         # EEGPT trains a plain CrossEntropyLoss. At 0.1
+                               # the binary loss cannot go below 0.199 however
+                               # well the model does, which reads in a log as a
+                               # run that stopped learning.
+  select_by: auroc             # their monitor score for a binary task

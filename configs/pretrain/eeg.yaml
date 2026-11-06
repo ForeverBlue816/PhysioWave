@@ -1,0 +1,28 @@
+defaults: [base, model/wast_tare]
+run_name: pretrain_eeg
+data:
+  modality: eeg
+  synthetic:
+    montage_name: standard_1010_64
+model:
+  modality: eeg
+  sampling_rate: 256.0
+pretrain:
+  use_masked_raw: true
+  use_wavelet: true
+  use_reference_consistency: true
+  use_query_specialization: true
+  use_covariance: true
+  lambda_wave: 0.5
+  lambda_ref: 0.5
+  lambda_spec: 0.05
+  lambda_cov: 0.1
+  ref_consistency:
+    enabled: true
+    anchor: ssl            # SSL view is reference-invariant; 'pairwise' is the fallback
+    metric: cosine
+    reference:
+      enabled: true
+      num_views: 2
+      hard_view_prob: 0.2  # lateralised references appear, but never as the anchor
+      car_min_channels: 32

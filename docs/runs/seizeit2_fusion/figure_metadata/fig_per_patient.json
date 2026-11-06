@@ -1,0 +1,12 @@
+{
+  "checkpoint": "$PW_FAST_ROOT/runs/fusion/ralf_frozen_szo/best.pth",
+  "epoch": 5,
+  "run": "ralf_frozen_szo",
+  "git_commit": "dee0de2e333e08cd85e2068e234f7aaf6489b058",
+  "figure": "fig_per_patient",
+  "generated_utc": "2026-10-16T08:12:05.450842+00:00",
+  "figure_text": [],
+  "paper_mode": true,
+  "threshold": 0.5,
+  "gate": "cross"
+}

@@ -1,634 +1,287 @@
-# PhysioWave: A Multi-Scale Wavelet-Transformer for Physiological Signal Representation
-
 <div align="center">
 
-[![NeurIPS 2025](https://img.shields.io/badge/NeurIPS-2025-blue.svg)](https://neurips.cc/)
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/logo/banner_dark.svg">
+  <img src="assets/logo/banner_light.svg" alt="PhysioWave" width="560">
+</picture>
+
+# PhysioWave-T: Token-Efficient Wavelet Foundation Models for Biosignals
+
+[![TPAMI](https://img.shields.io/badge/IEEE%20TPAMI-under%20review-6a5acd.svg)](#citation)
+[![NeurIPS 2025](https://img.shields.io/badge/NeurIPS-2025-blue.svg)](https://arxiv.org/abs/2506.10351)
 [![arXiv](https://img.shields.io/badge/arXiv-2506.10351-b31b1b.svg)](https://arxiv.org/abs/2506.10351)
-[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
-[![PyTorch](https://img.shields.io/badge/PyTorch-2.0+-ee4c2c.svg)](https://pytorch.org/)
+[![Hugging Face](https://img.shields.io/badge/%F0%9F%A4%97%20Models-PhysioWave--T-ffcc4d.svg)](https://huggingface.co/ForeverBlue)
+[![PyTorch](https://img.shields.io/badge/PyTorch-2.2+-ee4c2c.svg)](https://pytorch.org/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
+**Pretrained EEG, ECG and sEMG encoders that take any channel count and sampling rate,
+and a reliability-aware fusion model that combines them.**
+
 </div>
+
+PhysioWave-T extends [PhysioWave (NeurIPS 2025)](docs/physiowave_v1.md) from ECG and
+sEMG to EEG, and from one fixed input layout per encoder to many. The extension
+rests on three ideas:
+
+- **Dynamic scale folding.** The wavelet subbands are recombined *before* tokenization. The sequence shrinks from $(J{+}1)CS$ to $CS$ tokens for $J$ levels, $C$ channels and $S$ patches.
+- **Routes.** Each acquisition setup, defined by its channel count and sampling rate, gets its own wavelet front end. One Transformer and one channel-name vocabulary are shared by every route of a modality.
+- **RALF.** Reliability-aware latent fusion combines the independently pretrained encoders with a per-sample reliability for each modality.
 
 <div align="center">
-
-**Official PyTorch implementation of PhysioWave, accepted at NeurIPS 2025**
-
-*A novel wavelet-based architecture for physiological signal processing that leverages adaptive multi-scale decomposition and frequency-guided masking to advance self-supervised learning*
-
+<img src="assets/tpami/model.png" alt="PhysioWave-T overview" width="95%">
+<br><sub>Overview, shown for EEG: route front ends, learnable wavelet analysis with dynamic ScaleFold, two-view masking and dual reconstruction.</sub>
 </div>
 
----
+## Highlights
 
-## 🌟 Key Features
+- **One EEG foundation model across montages.** A 30 M-parameter encoder pretrained on over 15 M four-second windows from 19 to 128 channels at 256 and 512 Hz, with no common montage forced on the data.
+- **4.0–7.2× faster, 6.8–12.7× less memory.** Folding cuts Transformer latency and peak memory by these factors over scale expansion, with no loss of accuracy. On 128-channel EEG, per-batch memory drops from about 32 GB to 2.5 GB.
+- **State of the art on EEG, ECG and sEMG.** The EEG encoder leads eight of nine metrics against BENDR, BIOT, LaBraM and EEGPT. The ECG encoder has the highest macro-F1 on PTB-XL Super and Chapman–Shaoxing. The sEMG encoder sets new accuracies on EPN-612 and GRABMyo.
+- **Wearable seizure detection.** On two behind-the-ear EEG channels the encoder reaches 61.4 % sensitivity at ≤ 11 false alarms per hour, ahead of LUNA-L with 25.4 M against 40.4 M parameters. Adding ECG and EMG raises this to 74.4 % with RALF and 78.9 % with weighted-logit fusion. RALF lifts window-level AUPRC from 0.321 to 0.399.
+- **Representations that recover physiology.** Channel embeddings learned from electrode *names* recover scalp topography, and the slowest wavelet scale gains weight from wakefulness to deep sleep in 13 of 13 subjects.
+
+## Pretrained models
+
+All weights are on the Hugging Face Hub. Each model card lists the files, the validation metrics and a loading example.
+
+| Model | Repository | Parameters | Routes (channels × rate) | Pretraining data |
+|---|---|---|---|---|
+| EEG encoder | [ForeverBlue/EEG](https://huggingface.co/ForeverBlue/EEG) | 30.3 M | 19 × 256, 32 × 512, 64 × 256, 128 × 512 | 7 corpora, 15.4 M windows of 4 s |
+| ECG encoder | [ForeverBlue/ECG](https://huggingface.co/ForeverBlue/ECG) | 30.1 M | 12 × 500, 1 × 250 | 7 corpora, 7.6 M windows of 10 s |
+| sEMG encoder | [ForeverBlue/EMG](https://huggingface.co/ForeverBlue/EMG) | 12.1 M | 16 × 2000, 24 × 2000, 64 × 2000 | 6 corpora, 5.1 M windows of 1 s |
+| RALF seizure detector | [ForeverBlue/RALF-SeizeIT2](https://huggingface.co/ForeverBlue/RALF-SeizeIT2) | three encoders + fusion | bte-EEG + ECG + EMG, 4 s | SeizeIT2, official split |
+
+Every encoder repository has two kinds of file:
+
+- **`<modality>_c1_encoder.pth`** holds the channel embedding and the shared Transformer. It loads onto any montage, and is the file to fine-tune from.
+- **`pretrain_<modality>_c1_moe_*.pth`** is the complete pretraining model: every route front end and both decoders. Use it to continue pretraining, or to fine-tune on a montage that *is* one of the routes.
+
+## Method
 
 <table>
 <tr>
-<td width="50%">
-
-✨ **Learnable Wavelet Decomposition**
-- Adaptive multi-resolution analysis
-- Soft gating mechanism for optimal wavelet selection
-
-📊 **Frequency-Guided Masking**
-- Novel masking strategy prioritizing high-energy components
-- Superior to random masking for signal representation
-
-</td>
-<td width="50%">
-
-🔗 **Cross-Scale Feature Fusion**
-- Attention-based fusion across decomposition levels
-- Hierarchical feature integration
-
-🧠 **Multi-Modal Support**
-- Unified framework for ECG and EMG signals
-- Extensible to other physiological signals
-
-</td>
+<td width="58%"><img src="assets/tpami/softgate.png" alt="Soft-gated wavelet analysis"></td>
+<td width="42%"><img src="assets/tpami/CAFFN.png" alt="CAFFN"></td>
+</tr>
+<tr>
+<td><sub><b>Soft-gated wavelet analysis.</b> Five learnable wavelet filter pairs per channel are mixed by a selector. Channel-specific gates blend the upsampled subbands with the running approximation and detail states.</sub></td>
+<td><sub><b>Cross-scale channel-aggregation FFN (CAFFN).</b> The current approximation–detail pair is refined by convolution and channel aggregation.</sub></td>
 </tr>
 </table>
 
-<div align="center">
+**Dynamic ScaleFold.** Per channel and per patch, a small network predicts weights over the $J{+}1$ subbands from their local statistics. The subbands are then summed into one row, refined by a 3-tap synthesis filter. The Transformer therefore sees $C \times S$ tokens however deep the decomposition is. Folding has no channel-specific parameters, so it transfers unchanged to new montages.
 
-📈 **Large-Scale Pretraining**: Models trained on **182GB of ECG** and **823GB of EMG** data
+**Pretraining.** The masked windows go through the front end, and the Transformer reconstructs them through two heads: the folded wavelet patch (MSE) and the preprocessed waveform (SmoothL1). Masking is frequency-guided at a 70 % ratio and applied *before* the front end.
 
-</div>
-
----
-
-## 🏗️ Model Architecture
+**Adaptation to unseen setups.** A downstream montage that matches no route gets a fresh front end, seeded from the same wavelet families. The pretrained Transformer and channel embedding are reused, and new sensor names get new embedding rows.
 
 <div align="center">
-
-<img src="fig/model.png" alt="PhysioWave Architecture" width="90%">
-
+<img src="assets/tpami/fusion.png" alt="RALF" width="90%">
+<br><sub><b>Reliability-aware latent fusion (RALF).</b> Each encoder contributes four summary tokens. A per-sample reliability gates each modality's tokens in the cross-attention and weights its unimodal prediction. Missing modalities are masked out.</sub>
 </div>
 
-### Pipeline Overview
+## Results
 
-The PhysioWave pretraining pipeline consists of five key stages:
+### EEG
 
-1. **Wavelet Initialization**: Standard wavelet functions (e.g., 'db6', 'sym4') generate learnable low-pass and high-pass filters
-2. **Multi-Scale Decomposition**: Adaptive wavelet decomposition produces multi-scale frequency-band representations
-3. **Patch Embedding**: Decomposed features are processed into spatio-temporal patches with FFT-based importance scoring
-4. **Masked Encoding**: High-scoring patches are masked and processed through Transformer layers with rotary position embeddings
-5. **Reconstruction**: Lightweight decoder reconstructs masked patches for self-supervised learning
+Balanced accuracy (BAC), Cohen's kappa, weighted F1 and AUROC. Our values are means over three seeds.
 
-### Core Components
+| Method | Params | Sleep-EDFx BAC | Kappa | W-F1 | P300 BAC | Kappa | AUROC | KaggleERN BAC | Kappa | AUROC |
+|---|---|---|---|---|---|---|---|---|---|---|
+| BENDR | 157M | 0.6655 | 0.6659 | 0.7507 | 0.6114 | 0.2227 | 0.6588 | 0.5672 | 0.1461 | 0.6030 |
+| BIOT | 3.2M | 0.6622 | 0.6461 | 0.7415 | 0.5485 | 0.0968 | 0.5308 | 0.5118 | 0.0297 | 0.5495 |
+| LaBraM | 5.8M | 0.6771 | 0.6710 | 0.7592 | 0.6477 | 0.2935 | 0.7068 | 0.5439 | 0.0944 | 0.5693 |
+| EEGPT | 25M | 0.6917 | 0.6857 | 0.7654 | 0.6502 | **0.2999** | 0.7168 | 0.5837 | 0.1882 | 0.6621 |
+| **PhysioWave-T (fine-tune)** | 30M | **0.7060** | **0.7365** | **0.8092** | **0.6706** | 0.2975 | **0.7370** | **0.6171** | **0.2059** | **0.6632** |
 
-| Component | Description |
-|-----------|-------------|
-| 🌊 **Learnable Wavelet Decomposition** | Adaptively selects optimal wavelet bases for input signals |
-| 📐 **Multi-Scale Feature Reconstruction** | Hierarchical decomposition with soft gating between scales |
-| 🎯 **Frequency-Guided Masking** | Identifies and masks high-energy patches for self-supervised learning |
-| 🔄 **Transformer Encoder/Decoder** | Processes masked patches with rotary position embeddings |
+Sleep-EDFx's 100 Hz derivations are not among the pretraining routes, so the encoder runs on a new front end.
 
----
+### ECG
 
-## 📊 Performance Highlights
+Macro-F1 and macro-AUROC in %.
 
-### Benchmark Results
+| Method | Params | PTB-XL Super F1 | AUC | CPSC 2018 F1 | AUC | Chapman F1 | AUC |
+|---|---|---|---|---|---|---|---|
+| MERL | 11M | 48.1 | 91.9 | 72.8 | 92.6 | — | 87.9 |
+| OpenECG-MAE | 11M | 48.1 | 90.9 | **74.5** | 93.2 | 50.8 | 94.2 |
+| PhysioWave-L | 37M | 66.7 | **94.6** | 73.1 | **96.1** | 54.8 | 98.3 |
+| **PhysioWave-T (fine-tune)** | 30M | **70.9** | 90.3 | 73.1 | 94.2 | **56.7** | **99.4** |
+
+### sEMG
+
+Gesture recognition accuracy and macro-F1 in %.
+
+| Method | Params | EPN-612 Acc. | F1 | GRABMyo Acc. | F1 |
+|---|---|---|---|---|---|
+| MOMENT | 385M | 90.87 | 90.16 | 82.67 | 82.19 |
+| OTiS | 45M | 87.55 | 88.03 | 79.38 | 78.80 |
+| PhysioWave-L | 37M | 94.50 | 94.56 | 88.53 | 88.37 |
+| **PhysioWave-T (fine-tune)** | 12M | **94.80** | **94.79** | **89.78** | **89.74** |
+
+The paper's tables also list the from-scratch and linear-probe rows and every baseline.
+
+### Multimodal seizure detection (SeizeIT2)
 
 <div align="center">
-
-| Task | Dataset | Metric | Performance |
-|------|---------|--------|-------------|
-| **ECG Arrhythmia** | PTB-XL | Accuracy | **73.1%** |
-| **ECG Multi-Label** | CPSC 2018 | F1-Micro | **77.1%** |
-| **ECG Multi-Label** | Shaoxing | F1-Micro | **94.6%** |
-| **EMG Gesture** | EPN-612 | Accuracy | **94.5%** |
-
+<img src="assets/tpami/seize.png" alt="SeizeIT2 results" width="95%">
 </div>
 
-### Multi-Label Classification Detailed Metrics
+The panels show the official split: 29 test patients, 2,912 h and 181 seizures.
+
+- **(a) Event-level detection.** Fusing EEG, ECG and EMG beats every EEG-only foundation model at the clinical operating points: at 11 false alarms per hour sensitivity rises from 61.4 % to 74.4 % with RALF and 78.9 % with weighted-logit fusion.
+- **(b) EEG-only encoders.** Fine-tuned, PhysioWave-T is the most sensitive of the four EEG encoders, with 25.4 M parameters against LUNA-L's 40.4 M.
+- **(c) Reliability.** Corrupting one modality lowers only that modality's reliability.
+- **(d) Fusion rules.** All six RALF training variants exceed weighted-logit and concatenation fusion in AUPRC whenever EEG and ECG are present together.
+
+### Efficiency
+
+<div align="center">
+<img src="assets/tpami/fold_efficiency.png" alt="ScaleFold efficiency" width="95%">
+</div>
+
+These are EEG encoder measurements on a single GPU in bf16, at the training batch sizes. Folding cuts latency by 4.0–7.2× and peak memory by 6.8–12.7×, while the dynamic fold itself costs 1.5–2.6 % of the forward pass. The saving grows with channel count.
+
+## What the encoders learned
+
+<div align="center">
+<img src="assets/tpami/topology.png" alt="Channel embedding topology" width="90%">
+</div>
+
+**Scalp topology from names alone.** Embedding similarity falls with geodesic scalp distance, both in the 10-5 system and on the 128-electrode EGI net (Spearman ρ = −0.19 and −0.25, p < 0.001). An electrode's five nearest neighbours in embedding space lie 44–56° apart on the scalp, against 84–88° when shuffled. The model never saw coordinates.
+
+<div align="center">
+<img src="assets/tpami/wavelet.png" alt="Learned wavelet front ends" width="90%">
+</div>
+
+**Spectral adaptation per modality.** Pretraining moves each front end's pass-band onto its modality's informative range. On 19-channel EEG the low-pass widens from 12 Hz to 56 Hz, covering the γ band. On high-density sEMG it rises from 125 Hz to 356–418 Hz, the upper edge of the EMG band. On most routes, the deeper decomposition levels specialise to a single wavelet.
+
+<div align="center">
+<img src="assets/tpami/fold_by_stage.png" alt="ScaleFold weights across sleep stages" width="90%">
+</div>
+
+**Scale allocation follows sleep.** After fine-tuning for staging, ScaleFold gives more weight to the slowest scale from wakefulness to N3. On Pz-Oz this holds in 13 of 13 test subjects (Wilcoxon p = 2.4 × 10⁻⁴). The fold was never shown a stage label.
 
 <details>
-<summary><b>CPSC 2018 Dataset (9-Class Multi-Label)</b></summary>
+<summary><b>Masked reconstruction examples</b></summary>
 
-<div align="center">
+<img src="assets/tpami/mask_reconstruction.png" alt="Masked reconstruction" width="100%">
+<img src="assets/tpami/raw_waveform.png" alt="Raw waveform reconstruction" width="100%">
 
-| Metric | Micro-Average | Macro-Average |
-|--------|---------------|---------------|
-| **Precision** | 0.7389 | 0.6173 |
-| **Recall** | 0.8059 | 0.6883 |
-| **F1-Score** | 0.7709 | 0.6500 |
-| **AUROC** | 0.9584 | 0.9280 |
-
-</div>
-
-**Dataset Details:**
-- 9 official diagnostic classes (SNR, AF, IAVB, LBBB, RBBB, PAC, PVC, STD, STE)
-- 12-lead ECG signals at 500 Hz
-- Record-level split to prevent data leakage
-
+The examples come from four EEG routes spanning 19–128 channels, with 70 % of patches masked. Each route shows its median-NMSE validation window, not its best.
 </details>
 
-<details>
-<summary><b>Chapman-Shaoxing Dataset (4-Class Multi-Label)</b></summary>
-
-<div align="center">
-
-| Metric | Micro-Average | Macro-Average |
-|--------|---------------|---------------|
-| **Precision** | 0.9389 | 0.9361 |
-| **Recall** | 0.9536 | 0.9470 |
-| **F1-Score** | 0.9462 | 0.9413 |
-| **AUROC** | 0.9949 | 0.9930 |
-
-</div>
-
-**Dataset Details:**
-- 4 merged diagnostic classes (SB, AFIB, GSVT, SR)
-- 12-lead ECG signals at 500 Hz
-- Balanced multi-label distribution
-
-</details>
-
----
-
-## 💾 Pretrained Models
-
-<div align="center">
-
-### [📥 Download Pretrained Models](https://drive.google.com/drive/folders/1CobMgFT1WIOAHfz1j7Yij3BL6kkjm59k?dmr=1&ec=wgc-drive-globalnav-goto)
-
-</div>
-
-| Model | Parameters | Training Data | Description |
-|-------|------------|---------------|-------------|
-| `ecg.pth` | 14M | 182GB ECG | ECG pretrained model |
-| `emg.pth` | 5M | 823GB EMG | EMG pretrained model |
-
-**Usage:**
-```python
-# Load pretrained model
-checkpoint = torch.load('ecg.pth')
-model.load_state_dict(checkpoint['model_state_dict'])
-```
-
----
-
-## 🚀 Quick Start
-
-### Prerequisites
+## Installation
 
 ```bash
-# Clone repository
 git clone https://github.com/ForeverBlue816/PhysioWave.git
 cd PhysioWave
-
-# Create conda environment
-conda create -n physiowave python=3.11
-conda activate physiowave
-
-# Install PyTorch (CUDA 12.1)
-pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
-
-# Install requirements
+conda create -n physiowave python=3.11 -y && conda activate physiowave
+pip install torch --index-url https://download.pytorch.org/whl/cu121   # PyTorch >= 2.2
 pip install -r requirements.txt
+pip install huggingface_hub          # to download the weights
 ```
 
-### 📦 Data Preparation
+## Quick start: fine-tune a pretrained encoder
 
-<details>
-<summary><b>Dataset Download Links</b></summary>
-
-#### ECG Datasets
-
-- [PTB-XL Database](https://physionet.org/content/ptb-xl/1.0.3/) - 21,837 clinical ECG records
-- [MIMIC-IV-ECG](https://physionet.org/content/mimic-iv-ecg/1.0/) - 800K+ ECG recordings
-- [PhysioNet Challenge 2021](https://physionet.org/content/challenge-2021/1.0.3/) - Multi-database ECG
-- [CPSC 2018](https://www.kaggle.com/competitions/cpsc-2018) - Arrhythmia classification challenge
-- [Chapman-Shaoxing](https://www.kaggle.com/datasets/yuty2022/chapmanshaoxing-ecg) - Large-scale 12-lead ECG
-
-#### EMG Datasets
-
-- [EPN-612 Dataset](https://zenodo.org/records/4421500) - 612 hand gestures
-- [NinaPro Database DB6](https://ninapro.hevs.ch/instructions/DB6.html) - HD-sEMG recordings
-
-</details>
-
-<details>
-<summary><b>Data Format Specifications</b></summary>
-
-#### HDF5 Structure
+The encoder file loads onto any montage. Your montage supplies the front end and the patch embedding, and the checkpoint supplies the rest.
 
 ```python
-# Single-label classification
-{
-    'data': (N, C, T),   # Signal data: float32
-    'label': (N,)        # Labels: int64
-}
+import torch
+from huggingface_hub import hf_hub_download
+from physiowave.eeg_c1.downstream import EEGC1Downstream
 
-# Multi-label classification
-{
-    'data': (N, C, T),   # Signal data: float32
-    'label': (N, K)      # Multi-hot labels: float32
-}
+ENC = hf_hub_download("ForeverBlue/EEG", "eeg_c1_encoder.pth")
+ck = torch.load(ENC, map_location="cpu", weights_only=False)
+mc = ck["model_config"]
+CH = ["Fz", "Cz", "Pz", "Oz", "C3", "C4", "P3", "P4"]          # your electrodes, by name
+
+model = EEGC1Downstream(
+    in_channels=len(CH), window_samples=1024, sampling_rate=256.0,
+    patch_samples=128, num_classes=2, channel_names=CH,
+    embed_dim=mc["embed_dim"], depth=mc["depth"], num_heads=mc["num_heads"],
+    channel_embed_dim=mc.get("channel_embed_dim", 64),
+    channel_vocab_size=ck["channel_vocab_size"])
+print(model.describe_transfer(model.load_pretrained(ENC)))
+# loaded: transformer N, channel encoder N, gate yes, frontend 0, patcher 0
+
+class Meta:
+    channel_names = CH
+    channel_mask = None
+
+logits = model(torch.randn(2, len(CH), 1024), Meta())["logits"]     # [2, 2]
 ```
 
-**Dimensions:**
-- `N` = Number of samples
-- `C` = Number of channels
-- `T` = Time points
-- `K` = Number of classes (multi-label only)
+For ECG and sEMG, swap in `physiowave.ecg_c1.downstream.ECGC1Downstream` with `ForeverBlue/ECG`, or `physiowave.emg_c1.downstream.EMGC1Downstream` with `ForeverBlue/EMG`. Pass real channel names, because the checkpoint's vocabulary hash is checked on load.
 
-#### Signal Specifications
+## Reproducing the paper
 
-| Signal | Channels | Length | Sampling Rate | Normalization |
-|--------|----------|--------|---------------|---------------|
-| **ECG** | 12 | 2048 | 500 Hz | MinMax [-1,1] or Z-score |
-| **EMG** | 8 | 1024 | 200-2000 Hz | Max-abs or Z-score |
-
-</details>
-
-### 🔄 Preprocessing Examples
-
-<details>
-<summary><b>ECG Preprocessing (PTB-XL - Single-Label)</b></summary>
+All runs were trained on the CINECA Leonardo cluster; [docs/cineca_setup.md](docs/cineca_setup.md) has the environment and Slurm jobs.
 
 ```bash
-# Download PTB-XL dataset
-wget -r -N -c -np https://physionet.org/files/ptb-xl/1.0.3/
+# Pretraining, one modality each. Corpora and preprocessing: see the script headers
+bash EEG/pretrain_eeg_c1_moe.sh
+bash ECG/pretrain_ecg_c1_moe.sh
+bash EMG/pretrain_emg_c1_moe.sh
 
-# Preprocess for single-label classification
-python ECG/ptbxl_finetune.py
+# Downstream: MODE = ft | probe | scratch
+TASK=sleep_edf   MODE=ft bash EEG/finetune_eeg_c1.sh
+TASK=ptbxl       MODE=ft bash ECG/finetune_ecg_c1.sh
+TASK=epn612      MODE=ft bash EMG/finetune_emg_c1.sh
+
+# Multimodal fusion on SeizeIT2: prepare windows, train, then event-level scoring
+python Fusion/seizeit2_prep.py --help
+python -m physiowave.fusion.train --config fusion/c1_ralf --output-dir runs/ralf \
+    --set encoders.eeg=<EEG ckpt> encoders.ecg=<ECG ckpt> encoders.emg=<EMG ckpt>
+python Fusion/seizeit2_events.py --help
 ```
 
-**Output files:**
-- `train.h5` - Training data with shape `(N, 12, 2048)`
-- `val.h5` - Validation data
-- `test.h5` - Test data
+| Topic | Document |
+|---|---|
+| Architecture, routes, corpora, training budgets | [docs/c1_pretraining_architecture.md](docs/c1_pretraining_architecture.md) |
+| EEG downstream: Sleep-EDFx, P300, KaggleERN | [docs/eeg_downstream.md](docs/eeg_downstream.md), [docs/eegpt_benchmarks.md](docs/eegpt_benchmarks.md) |
+| ECG downstream | [docs/ecg_downstream.md](docs/ecg_downstream.md) |
+| sEMG downstream | [docs/emg_downstream.md](docs/emg_downstream.md) |
+| Multimodal fusion and the SeizeIT2 evaluation | [docs/fusion.md](docs/fusion.md) |
+| Per-run metrics and figures | [docs/runs/](docs/runs/) |
+| Releasing weights to the Hub | `scripts/prepare_hf_release.py`, `scripts/prepare_hf_fusion_release.py` |
 
-**Label format:** `(N,)` with 5 superclasses (NORM, MI, STTC, CD, HYP)
+## Repository layout
 
-</details>
-
-<details>
-<summary><b>ECG Preprocessing (CPSC 2018 - Multi-Label)</b></summary>
-
-```bash
-# Preprocess CPSC 2018 dataset
-python ECG/cpsc_multilabel.py
+```
+physiowave/
+  eeg_c1/  ecg_c1/  emg_c1/   PhysioWave-T encoders: routes, model, pretraining, downstream
+  fusion/                     RALF and the baselines, SeizeIT2 / MPDB data, event scoring
+  wavelet/  train/  pretrain/ shared wavelet modules, training loops, corruption
+EEG/  ECG/  EMG/  Fusion/     entry scripts and dataset preparation
+configs/                      pretraining, fine-tuning and fusion configs
+scripts/                      figures, benchmarks, Slurm jobs, Hub releases
+docs/                         methods, protocols, run records
+model.py  pretrain.py  finetune.py   the original PhysioWave (NeurIPS 2025), unchanged
 ```
 
-**Output files:**
-- `cpsc_9class_train.h5` - Training data
-- `cpsc_9class_val.h5` - Validation data
-- `cpsc_9class_test.h5` - Test data
-- `cpsc_9class_info.json` - Dataset metadata
-- `label_map.json` - Class mappings
-- `record_splits.json` - Record-level split info
+## PhysioWave (NeurIPS 2025)
 
-**Label format:** `(N, 9)` with 9 official CPSC classes
+The original ECG and sEMG model, with its training and fine-tuning guide, is still in this repository: [docs/physiowave_v1.md](docs/physiowave_v1.md).
 
-</details>
-
-<details>
-<summary><b>ECG Preprocessing (Chapman-Shaoxing - Multi-Label)</b></summary>
-
-```bash
-# Preprocess Chapman-Shaoxing dataset
-python ECG/shaoxing_multilabel.py
-```
-
-**Output files:**
-- `train.h5` - Training data
-- `val.h5` - Validation data
-- `test.h5` - Test data
-- `dataset_info.json` - Metadata
-- `record_splits.json` - Split information
-
-**Label format:** `(N, 4)` with 4 merged classes (SB, AFIB, GSVT, SR)
-
-</details>
-
-<details>
-<summary><b>EMG Preprocessing (EPN-612)</b></summary>
-
-```bash
-# Download from Zenodo and preprocess
-python EMG/epn_finetune.py
-```
-
-**Output files:**
-- `epn612_train_set.h5` - Training set `(N, 8, 1024)`
-- `epn612_val_set.h5` - Validation set
-- `epn612_test_set.h5` - Test set
-
-**Label format:** `(N,)` with 6 gesture classes
-
-</details>
-
----
-
-## 🎯 Training
-
-### Pretraining
-
-<details>
-<summary><b>ECG Pretraining</b></summary>
-
-```bash
-# Edit ECG/pretrain_ecg.sh to set data paths
-bash ECG/pretrain_ecg.sh
-```
-
-**Key parameters:**
-```bash
---mask_ratio 0.7                    # Mask 70% of patches
---masking_strategy frequency_guided # Use frequency-guided masking
---importance_ratio 0.7              # Balance importance vs randomness
---epochs 100                        # Pretraining epochs
-```
-
-</details>
-
-<details>
-<summary><b>EMG Pretraining</b></summary>
-
-```bash
-# Edit EMG/pretrain_emg.sh to set data paths
-bash EMG/pretrain_emg.sh
-```
-
-**Key parameters:**
-```bash
---mask_ratio 0.6                    # Mask 60% of patches
---in_channels 8                     # 8-channel EMG
---wave_kernel_size 16               # Smaller kernel for EMG
-```
-
-</details>
-
----
-
-### Fine-tuning
-
-#### Single-Label Classification
-
-<details>
-<summary><b>Standard Fine-tuning (ECG/EMG)</b></summary>
-
-```bash
-# ECG fine-tuning (PTB-XL)
-bash ECG/finetune_ecg.sh
-
-# EMG fine-tuning (EPN-612)
-bash EMG/finetune_emg.sh
-```
-
-**Example command:**
-```bash
-torchrun --nproc_per_node=4 finetune.py \
-  --train_file path/to/train.h5 \
-  --val_file path/to/val.h5 \
-  --test_file path/to/test.h5 \
-  --pretrained_path pretrained/ecg.pth \
-  --task_type classification \
-  --num_classes 5 \
-  --batch_size 16 \
-  --epochs 50 \
-  --lr 1e-4
-```
-
-</details>
-
-#### Multi-Label Classification
-
-<details>
-<summary><b>Multi-Label Fine-tuning (CPSC/Shaoxing)</b></summary>
-
-This repository uses `finetune_multilabel.py` for multi-label classification tasks. First, prepare your data using the corresponding preprocessing scripts.
-
-**CPSC 2018 Example:**
-
-```bash
-# Edit paths in ECG/cpsc_multilabel.sh
-bash ECG/cpsc_multilabel.sh
-```
-
-**Shaoxing Example:**
-
-```bash
-# Edit paths in ECG/shaoxing_multilabel.sh
-bash ECG/shaoxing_multilabel.sh
-```
-
-**Manual command:**
-
-```bash
-NUM_GPUS=4
-torchrun --nproc_per_node=${NUM_GPUS} finetune_multilabel.py \
-  --train_file "path/to/train.h5" \
-  --val_file "path/to/val.h5" \
-  --test_file "path/to/test.h5" \
-  --pretrained_path "path/to/pretrained_ecg/best_model.pth" \
-  \
-  `# Task Configuration` \
-  --task_type multilabel \
-  --threshold 0.3 \
-  \
-  `# Model Architecture` \
-  --in_channels 12 \
-  --max_level 3 \
-  --wave_kernel_size 24 \
-  --wavelet_names db4 db6 sym4 coif2 \
-  --use_separate_channel \
-  --patch_size 64 \
-  --embed_dim 384 \
-  --depth 8 \
-  --num_heads 12 \
-  --mlp_ratio 4.0 \
-  --dropout 0.1 \
-  \
-  `# Training Parameters` \
-  --batch_size 16 \
-  --epochs 50 \
-  --lr 1e-4 \
-  --weight_decay 1e-4 \
-  --scheduler cosine \
-  --warmup_epochs 5 \
-  --grad_clip 1.0 \
-  --use_amp \
-  \
-  `# Classification Head` \
-  --pooling mean \
-  --head_hidden_dim 512 \
-  --head_dropout 0.2 \
-  --label_smoothing 0.1 \
-  \
-  `# Output` \
-  --seed 42 \
-  --output_dir "./checkpoints_multilabel"
-```
-
-**Key Parameters for Multi-Label:**
-- `--task_type multilabel` - Enable multi-label classification
-- `--threshold 0.3` - Decision threshold (adjust based on validation)
-- `--label_smoothing 0.1` - Regularization for better generalization
-
-</details>
-
-#### Zero-Shot Evaluation
-
-<details>
-<summary><b>Linear Probing</b></summary>
-
-Evaluate pretrained representations by freezing the encoder and training only the classification head:
-
-```bash
-torchrun --nproc_per_node=4 finetune.py \
-  --train_file path/to/train.h5 \
-  --val_file path/to/val.h5 \
-  --test_file path/to/test.h5 \
-  --pretrained_path pretrained/ecg.pth \
-  --freeze_encoder \
-  --num_classes 5 \
-  --epochs 10 \
-  --lr 1e-3
-```
-
-</details>
-
----
-
-## 🔧 Configuration Guide
-
-### Model Configuration
-
-<details>
-<summary><b>Architecture Parameters</b></summary>
-
-| Parameter | Description | Options | Recommendation |
-|-----------|-------------|---------|----------------|
-| `--in_channels` | Input channels | 12 (ECG), 8 (EMG) | Match your data |
-| `--max_level` | Wavelet decomposition levels | 2-4 | 3 (default) |
-| `--wave_kernel_size` | Wavelet kernel size | 16-32 | 24 (ECG), 16 (EMG) |
-| `--wavelet_names` | Wavelet families | db, sym, coif, bior | See tips below |
-| `--embed_dim` | Embedding dimension | 128-768 | 256/384/512 |
-| `--depth` | Transformer layers | 4-12 | 6/8/12 |
-| `--num_heads` | Attention heads | 4-16 | 8/12 |
-| `--patch_size` | Temporal patch size | 20-128 | 64 (ECG), 32 (EMG) |
-
-**💡 Wavelet Selection Tips:**
-
-| Signal Type | Recommended Wavelets | Rationale |
-|-------------|---------------------|-----------|
-| **ECG** | `db4 db6 sym4 coif2` | Optimal for QRS complex detection |
-| **EMG** | `sym4 sym5 db6 coif3 bior4.4` | Best for muscle activation patterns |
-| **Custom** | Experiment with combinations | Domain-specific optimization |
-
-</details>
-
-<details>
-<summary><b>Training Configuration</b></summary>
-
-#### Pretraining Parameters
-
-| Parameter | Description | ECG | EMG |
-|-----------|-------------|-----|-----|
-| `--mask_ratio` | Masking ratio | 0.7 | 0.6 |
-| `--masking_strategy` | Masking type | `frequency_guided` | `frequency_guided` |
-| `--importance_ratio` | Importance weight | 0.7 | 0.6 |
-| `--epochs` | Training epochs | 100 | 100 |
-| `--lr` | Learning rate | 2e-5 | 5e-5 |
-
-#### Fine-tuning Parameters
-
-| Parameter | Description | Default | Range |
-|-----------|-------------|---------|-------|
-| `--batch_size` | Batch size per GPU | 16 | 8-64 |
-| `--epochs` | Training epochs | 50 | 20-100 |
-| `--lr` | Learning rate | 1e-4 | 1e-5 to 1e-3 |
-| `--weight_decay` | L2 regularization | 1e-4 | 1e-5 to 1e-3 |
-| `--scheduler` | LR scheduler | `cosine` | cosine/step/plateau |
-| `--warmup_epochs` | Warmup epochs | 5 | 0-10 |
-| `--grad_clip` | Gradient clipping | 1.0 | 0.5-2.0 |
-
-#### Multi-Label Specific
-
-| Parameter | Description | Default | Notes |
-|-----------|-------------|---------|-------|
-| `--threshold` | Decision threshold | 0.3-0.5 | Tune on validation set |
-| `--label_smoothing` | Label smoothing | 0.1 | 0.0-0.2 for regularization |
-| `--use_class_weights` | Class balancing | False | Enable for imbalanced data |
-
-</details>
-
-<details>
-<summary><b>Hardware and Performance</b></summary>
-
-#### Performance Tips
-
-```bash
-# Enable mixed precision for 2x speedup
---use_amp
-
-# Increase batch size with gradient accumulation
---batch_size 8 --grad_accumulation_steps 4  # Effective batch size: 32
-
-# Multi-GPU training
-torchrun --nproc_per_node=4 [script.py]
-```
-
-</details>
-
-
-## 📖 Citation
-
-If you find our work helpful, please cite:
+## Citation
 
 ```bibtex
-@article{chen2025physiowave,
-  title={PhysioWave: A Multi-Scale Wavelet-Transformer for Physiological Signal Representation},
-  author={Chen, Yanlong and Orlandi, Mattia and Rapa, Pierangelo Maria and Benatti, Simone and Benini, Luca and Li, Yawei},
-  journal={arXiv preprint arXiv:2506.10351},
-  year={2025}
+@article{chen2026physiowavet,
+  title   = {PhysioWave-T: Token-Efficient Wavelet Foundation Models for Biosignals},
+  author  = {Chen, Yanlong and Benatti, Simone and Benini, Luca and Guan, Cuntai and Li, Yawei},
+  journal = {IEEE Transactions on Pattern Analysis and Machine Intelligence},
+  note    = {Under review},
+  year    = {2026}
+}
+
+@inproceedings{chen2025physiowave,
+  title     = {PhysioWave: A Multi-Scale Wavelet-Transformer for Physiological Signal Representation},
+  author    = {Chen, Yanlong and Orlandi, Mattia and Rapa, Pierangelo Maria and Benatti, Simone and Benini, Luca and Li, Yawei},
+  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
+  year      = {2025}
 }
 ```
 
----
+## License and contact
 
-## 🤝 Contact & Contributions
-
-<div align="center">
-
-**Lead Author:** Yanlong Chen  
-**Email:** [yanlchen@student.ethz.ch](mailto:yanlchen@student.ethz.ch)
-
-</div>
-
-We welcome contributions! Feel free to:
-
-- 🐛 [Report bugs](https://github.com/ForeverBlue816/PhysioWave/issues)
-- 💡 Suggest enhancements
-- 🔧 Submit Pull Requests
-- ⭐ Star this repository if you find it useful!
-
----
-
-## 🙏 Acknowledgments
-
-We thank:
-- The authors of PTB-XL, MIMIC-IV-ECG, CPSC 2018, Chapman-Shaoxing, and EPN-612 datasets
-- The PyTorch team for their excellent framework
-- The open-source community for inspiration and tools
-
----
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
----
-
-<div align="center">
-
-<sub>Built with ❤️ for the physiological signal processing community</sub>
-
-[![GitHub stars](https://img.shields.io/github/stars/ForeverBlue816/PhysioWave?style=social)](https://github.com/ForeverBlue816/PhysioWave/stargazers)
-[![GitHub forks](https://img.shields.io/github/forks/ForeverBlue816/PhysioWave?style=social)](https://github.com/ForeverBlue816/PhysioWave/network/members)
-
-</div>
+The code is released under the [MIT License](LICENSE). The pretraining corpora keep their own licenses and data-use agreements. Questions and issues: [GitHub issues](https://github.com/ForeverBlue816/PhysioWave/issues) or yanlong.chen@ntu.edu.sg.

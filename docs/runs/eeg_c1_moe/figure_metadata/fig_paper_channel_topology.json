@@ -1,0 +1,115 @@
+{
+  "checkpoint": "$PW_FAST_ROOT/runs/pretrain_eeg_c1_moe/best.pth",
+  "checkpoint_sha256": "4226871943e1ad68b434222c94a3a661642af6852bbf7e43eb84a4f042b5c131",
+  "epoch": 58,
+  "global_step": 44544,
+  "channel_vocab_sha256": "596f2711269e47b22a9335ba991f44b2edd02a5728ff4461487e26c3a9a302e8",
+  "modality": "eeg",
+  "plotting_script_git_commit": "dfa3640ed1489f6b158d699a8d21a62460e55031",
+  "split": "val",
+  "mask_seed": 1234,
+  "manifest": "$SCRATCH/bio/eeg/eeg_c1_corpus/merged/manifest_val.jsonl",
+  "objective": {
+    "spec_weight": 0.5,
+    "raw_weight": 0.5,
+    "raw_beta": 0.5,
+    "fold_kl": 0.001,
+    "mask_before_frontend": true,
+    "normalize_spec_target": true
+  },
+  "objective_equation": "0.5*L_spec + 0.5*L_raw + 0.001*L_foldKL",
+  "metrics_last_epoch": 59,
+  "figure": "fig_paper_channel_topology",
+  "generated_utc": "2026-10-26T16:22:53.070040+00:00",
+  "figure_text": [
+    "a",
+    "b"
+  ],
+  "paper_mode": true,
+  "stats": {
+    "10-5/trained": {
+      "n_electrodes": 130,
+      "n_pairs": 8385,
+      "spearman_rho": -0.19190941863137323,
+      "perm_p_one_sided": 0.0004997501249375312,
+      "null_rho_mean": 0.00024635492005943896,
+      "null_rho_sd": 0.016020417910004258
+    },
+    "10-5/init": {
+      "n_electrodes": 130,
+      "n_pairs": 8385,
+      "spearman_rho": 0.0076795787570061586,
+      "perm_p_one_sided": 0.7521239380309845,
+      "null_rho_mean": -2.5942920847642008e-05,
+      "null_rho_sd": 0.010992091058611698
+    },
+    "EGI-128/trained": {
+      "n_electrodes": 128,
+      "n_pairs": 8128,
+      "spearman_rho": -0.2496078017231768,
+      "perm_p_one_sided": 0.0004997501249375312,
+      "null_rho_mean": 0.0003983295371516988,
+      "null_rho_sd": 0.01677552422732949
+    },
+    "EGI-128/init": {
+      "n_electrodes": 128,
+      "n_pairs": 8128,
+      "spearman_rho": -0.0004665400343543882,
+      "perm_p_one_sided": 0.4572713643178411,
+      "null_rho_mean": 0.00010336806237902849,
+      "null_rho_sd": 0.011107673852643607
+    },
+    "procrustes_r": {
+      "trained": 0.17234322347586908,
+      "init": 0.10803010231699404
+    },
+    "knn_scalp_distance": {
+      "10-5": {
+        "k": 5,
+        "trained_deg": 55.68587817085226,
+        "init_deg": 85.73422133639541,
+        "scalp_floor_deg": 16.29606710357683,
+        "null_mean_deg": 84.35021747823528,
+        "null_p2_5_deg": 80.72031619901348,
+        "null_p97_5_deg": 87.8778550503273,
+        "perm_p_one_sided": 0.0004997501249375312
+      },
+      "EGI-128": {
+        "k": 5,
+        "trained_deg": 43.76702918182705,
+        "init_deg": 88.65535235320196,
+        "scalp_floor_deg": 17.449901727252243,
+        "null_mean_deg": 88.06720198662734,
+        "null_p2_5_deg": 84.30792044757524,
+        "null_p97_5_deg": 91.75930508299582,
+        "perm_p_one_sided": 0.0004997501249375312
+      }
+    },
+    "seed_link_mean_deg": {
+      "Fz": 39.39027072990238,
+      "Cz": 48.51715966137592,
+      "Pz": 54.93390952881968,
+      "Oz": 19.721351273173838,
+      "T7": 57.49691918160827,
+      "T8": 30.878784565849458
+    }
+  },
+  "seeds": [
+    "Fz",
+    "Cz",
+    "Pz",
+    "Oz",
+    "T7",
+    "T8"
+  ],
+  "n_trained_electrodes": {
+    "10-5": 130,
+    "EGI-128": 128
+  },
+  "trained_names_source": "corpus montages",
+  "coordinates": "MNE standard_1005 (10-5 names) and GSN-HydroCel-128 (EGI names) template montages; great-circle distance on the sphere fitted to each family; the model was given no coordinate",
+  "permutation_null": "embedding rows shuffled among electrodes, 2000 draws, one-sided (rho < 0)",
+  "procrustes": "2-D metric MDS of 1 - cosine, aligned to the montage's 2-D topomap layout; r = sqrt(1 - disparity); reported, not drawn",
+  "panel_b": "six seeds; every trained 10-5 electrode coloured by the percentile rank of its cosine similarity to the seed; lines join the seed to its 5 most similar embeddings (mean length per seed in stats.seed_link_mean_deg)",
+  "knn": "panel (c): mean over electrodes of the mean great-circle distance to the k=5 electrodes with the most similar name embedding; grey bar the 2.5-97.5th percentiles of the row-shuffled null, open circle the untrained table, black tick each electrode's 5 true scalp neighbours"
+}

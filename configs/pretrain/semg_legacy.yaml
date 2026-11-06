@@ -1,0 +1,41 @@
+defaults: [base]
+run_name: finetune_semg_legacy
+# The legacy architecture, driven by physiowave.train.finetune_main rather than
+# finetune.py.
+#
+# This exists for one experiment. The legacy path reaches ~0.70 validation
+# accuracy on DB5 where the extension sits at ~0.16, and the two are trained by
+# different code: different optimizer parameter groups, warmup, scheduler,
+# checkpoint selection and evaluation. Any of those could account for a gap that
+# looks architectural, and no amount of staring at the architectures will
+# separate them. Running the old model through the new loop does:
+#
+#   reaches ~0.70  -> the training pipeline is fine, the architecture is the gap
+#   stays at ~0.16 -> the pipeline is the gap, and the architecture is exonerated
+#
+# The hyper-parameters below mirror what EMG/finetune_emg.sh passes for the DB5
+# run that reaches 0.70, so the only deliberate difference is the trainer.
+data:
+  modality: semg
+  emg_region: limb
+model:
+  name: legacy
+  legacy:
+    in_channels: 16
+    max_level: 3
+    wave_kernel_size: 16
+    wavelet_names: [sym4, sym5, db6, coif3, bior4.4]
+    use_separate_channel: true
+    patch_size: [1, 64]
+    embed_dim: 256
+    depth: 6
+    num_heads: 8
+    mlp_ratio: 4.0
+    dropout: 0.3
+    use_pos_embed: true
+    pos_embed_type: '2d'
+    pooling: mean
+    head_config:
+      hidden_dims: [512]
+      dropout: 0.3
+      pooling: mean

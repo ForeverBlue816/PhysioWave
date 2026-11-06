@@ -1,0 +1,116 @@
+# sEMG C1 multi-route pretraining.
+#
+# The EEG C1 model and objective (configs/pretrain/eeg_c1_moe.yaml) on surface
+# EMG: a wavelet frontend + dynamic ScaleFold per route, one patch embedding
+# and two decoders, one shared RoPE Transformer, C1 electrode embedding at the
+# token site. Everything not argued here is the EEG config's, for its reasons.
+#
+#   route      channels  @ 2000 Hz, 1 s window, 0.125 s patch   tokens
+#   W16_2000   16        emg2pose, emg2qwerty (each wrist)        128
+#   A24_2000   24        putEMG (optional)                        192
+#   G64_2000   64        one HD grid: Hyser 8x8, CEMHSEY 8x8/5x13   512
+#                       (cemhsey_8x8 and cemhsey_5x13 are two corpora
+#                       read from the same files: one electrode map each)
+#
+# Each high-density grid is its own sample: as one route, 256- and 320-channel
+# recordings would put 9.8 M and 15.3 M parameters into their frontends and
+# 2,048 / 2,560 tokens into every window (physiowave/emg_c1/routes.py).
+#
+# Never pretrained on: NinaPro DB5 and EPN-612, the downstream benchmarks.
+trainer: emg_c1_moe
+run_name: pretrain_emg_c1_moe
+seed: 42
+output_dir: ${run_name}
+
+data:
+  modality: emg
+  manifest_train: null
+  manifest_val: null
+  # temperature:0.5, as on EEG and ECG: emg2pose and emg2qwerty are most of the
+  # windows, and the HD corpora and putEMG are there for acquisition diversity
+  # -- at 0.5 they get a share of steps well above their share of windows
+  # without the two wristband corpora being crowded out. The banner prints
+  # passes/epoch per corpus. (full_pass -- every window once per epoch -- is
+  # the other option; it makes each epoch a whole read of the corpus.)
+  weights: temperature:0.5
+
+objective:
+  spec_weight: 0.5
+  raw_weight: 0.5
+  raw_beta: 0.5
+  fold_kl: 1.0e-3
+  mask_before_frontend: true
+  normalize_spec_target: true
+
+model:
+  max_level: 3
+  wave_kernel_size: 16
+  # db2/db4/db7 for the sharp motor-unit action potentials, sym4/sym5 for
+  # near-symmetric ones: the families sEMG denoising and feature extraction
+  # most often settle on. 4-14 taps, so `pad` places each exactly.
+  wavelet_names: [db2, db4, db7, sym4, sym5]
+  wave_init_mode: pad
+  use_separate_channel: true
+  scale_fold: dynamic
+  fold_synthesis: 3
+  fold_gamma: 0.1
+  # ~11 M shared backbone: 384 wide, 6 deep, 6 heads, head_dim 64 -- the
+  # Transformer the EEG Sleep-EDF numbers were produced with. 12.05 M in all,
+  # 11.56 M in the encoder fine-tuning inherits; the three frontends are
+  # 0.79 M together. With the low-level acquisition differences absorbed by
+  # the route frontends, the shared Transformer's job is temporal activation
+  # and cross-channel coordination, and the data -- ~716 h of wristband sEMG
+  # from 301 users plus the HD grids -- is what the budget goes to, not width.
+  embed_dim: 384
+  depth: 6
+  num_heads: 6
+  mlp_ratio: 4.0
+  dropout: 0.0
+  norm: rmsnorm
+  ffn: swiglu
+  qk_norm: true
+  masking_strategy: frequency_guided
+  importance_ratio: 0.6
+  # High, for EEG's reason: neighbouring electrodes on a band or a grid see
+  # largely the same muscles, so a masked patch with visible neighbours at the
+  # same instant is interpolation unless most of them are hidden too.
+  mask_ratio: 0.70
+  channel_encoding: id
+  channel_injection: token
+  channel_embed_dim: 64
+  channel_token_gate_init: 0.0
+
+train:
+  # ECG's budget: 60 epochs of 1000 steps, 60,000 optimizer updates, about
+  # 16 reads of the corpus (~1,370 windows a step across 16 ranks). The first
+  # run sized the epoch from corpus_passes_per_run 1.0, which came to 93 steps
+  # and 3,720 updates -- a twelfth of EEG's 46,080 -- and its validation loss
+  # was still falling when the cosine schedule ran out. An epoch is ~40 min on
+  # 4 nodes, so latest.pth lands well inside every walltime; the run takes
+  # two or three 24 h jobs chained with RESUME=auto.
+  epochs: 60
+  warmup_epochs: 2
+  lr: 3.0e-4
+  min_lr_ratio: 0.01
+  weight_decay: 0.05
+  clip_grad_norm: 1.0
+  # A step whose pre-clip gradient norm is above this, or not finite, is
+  # skipped (weights unchanged, schedule advanced). Epochs 0-38 of the 60k-step
+  # run never exceeded 0.5; at epoch 39 one hyser batch came in at 4e4, the
+  # next at inf, and the weights were NaN from there. More than
+  # max_skipped_steps_per_epoch skips in one epoch stops the run.
+  skip_step_grad_norm_above: 100.0
+  max_skipped_steps_per_epoch: 50
+  precision: bf16
+  grad_accumulation_steps: 1
+  # Explicit, as on ECG. STEPS_PER_EPOCH= at submission overrides it; null
+  # sizes the epoch from train.corpus_passes_per_run instead.
+  steps_per_epoch: 1000
+  val_mask_seed: 1234
+  # Per dataset, per rank: ~2 min over six corpora against a ~40 min epoch.
+  val_max_batches_per_dataset: 50
+  # Per rank: ~24 k tokens a step on every route.
+  batch_size_by_route:
+    W16_2000: 192
+    A24_2000: 128
+    G64_2000: 48

@@ -1,0 +1,109 @@
+{
+  "routes": {
+    "L12_500": {
+      "n_channels": 12,
+      "window_samples": 5000,
+      "sampling_rate": 500,
+      "patch_size": [
+        1,
+        250
+      ],
+      "n_tokens": 240
+    },
+    "L1_250": {
+      "n_channels": 1,
+      "window_samples": 2500,
+      "sampling_rate": 250,
+      "patch_size": [
+        1,
+        125
+      ],
+      "n_tokens": 20
+    }
+  },
+  "datasets": {
+    "code15": {
+      "route_id": "L12_500",
+      "n_windows": 123202
+    },
+    "georgia": {
+      "route_id": "L12_500",
+      "n_windows": 9750
+    },
+    "icentia11k": {
+      "route_id": "L1_250",
+      "n_windows": 1650343
+    },
+    "medalcare_xl": {
+      "route_id": "L12_500",
+      "n_windows": 15446
+    },
+    "mimic_iv_ecg": {
+      "route_id": "L12_500",
+      "n_windows": 748592
+    },
+    "pulsedb": {
+      "route_id": "L1_250",
+      "n_windows": 4992774
+    },
+    "sph": {
+      "route_id": "L12_500",
+      "n_windows": 24856
+    }
+  },
+  "target_weights": {
+    "mimic_iv_ecg": 0.44903819823734453,
+    "code15": 0.18216694486603502,
+    "sph": 0.08182317281970691,
+    "georgia": 0.05124635770153832,
+    "medalcare_xl": 0.06450133613273437,
+    "icentia11k": 0.06250562181002309,
+    "pulsedb": 0.1087183684326178
+  },
+  "realised_mixture": {
+    "by_step": {
+      "code15": 0.189,
+      "georgia": 0.058,
+      "icentia11k": 0.053,
+      "medalcare_xl": 0.06,
+      "mimic_iv_ecg": 0.456,
+      "pulsedb": 0.114,
+      "sph": 0.07
+    },
+    "by_window": {
+      "code15": 0.07229376514088996,
+      "georgia": 0.022185388244294276,
+      "icentia11k": 0.21624378426622465,
+      "medalcare_xl": 0.02295040163202856,
+      "mimic_iv_ecg": 0.17442305240341707,
+      "pulsedb": 0.4651281397424455,
+      "sph": 0.026775468570699987
+    }
+  },
+  "batch_size_by_route": {
+    "L12_500": 96,
+    "L1_250": 1024
+  },
+  "steps_per_epoch": 1000,
+  "parameters": {
+    "total": 30079821,
+    "shared_transformer": 28377728,
+    "wavelet_frontend.L12_500": 29847,
+    "wavelet_frontend.L1_250": 1863,
+    "patch_embed.500": 129536,
+    "patch_embed.250": 65536,
+    "reconstruction_head.500": 391930,
+    "reconstruction_head.250": 327805,
+    "raw_reconstruction_head.500": 391930,
+    "raw_reconstruction_head.250": 327805,
+    "channel_encoder": 2048,
+    "channel_to_token": 33280,
+    "channel_token_gate": 1,
+    "mask_token": 512,
+    "pretraining_only": 1439982,
+    "downstream_encoder": 28639839
+  },
+  "channel_vocab_size": 30,
+  "channel_vocab_sha256": "3448b5a10f662855971595abd569493e46fb1d821a51a3f1d676944d14b87a28",
+  "channel_vocab_modality": "ecg"
+}

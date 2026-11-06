@@ -1,0 +1,27 @@
+# WAST tokenizer only: no channel metadata, no spatial branches, no compression.
+# Isolates the effect of replacing multi-scale token inflation with a
+# critically-sampled analysis-synthesis tokenizer.
+model:
+  name: wast
+  modality: eeg
+  sampling_rate: 256.0
+  embed_dim: 256
+  num_summary_tokens: 4
+  mask_ratio: 0.5
+  masking_strategy: frequency_guided
+  importance_ratio: 0.6
+  wast:
+    patch_size: 64
+    level: 3
+    wavelet: bior4.4        # symmetric => the reflect boundary stays invertible
+    boundary_mode: reflect  # never `zero`: see physiowave/wavelet/dwt.py
+    placement: post_patch
+    learnable_filters: true
+    subband_width: 8
+    use_band_features: true
+  backbone:
+    depth: 6
+    num_heads: 8
+    slot_heads: 4
+    mlp_ratio: 4.0
+    dropout: 0.1

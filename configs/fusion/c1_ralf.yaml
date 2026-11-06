@@ -1,0 +1,63 @@
+# Multimodal fusion on the three C1 encoders (physiowave/fusion/train.py).
+#
+#   python -m physiowave.fusion.train --config fusion/c1_ralf --output-dir <dir> \
+#       --set data.tasks.mpdb.dir=<prep dir> data.tasks.seizeit2.dir=<prep dir> \
+#             encoders.eeg=<ckpt> encoders.ecg=<ckpt> encoders.emg=<ckpt> \
+#             model.fusion=ralf|concat|weighted_logit model.encoder_mode=frozen|finetune|scratch
+#
+# A task whose dir is null is left out, so one dataset trains alone. The
+# encoders are pretraining checkpoints (best.pth, epoch38.pth) or already
+# exported encoders; the trainer exports what each montage needs.
+run_name: fusion_c1_ralf
+seed: 42
+data:
+  tasks:
+    mpdb:     {dir: null, select_by: balanced_acc}   # 5 driving behaviours
+    seizeit2: {dir: null, select_by: auprc}          # seizure vs background
+  modalities: [eeg, ecg, emg]
+  num_workers: 4
+encoders:
+  eeg: null
+  ecg: null
+  emg: null
+model:
+  fusion: ralf                 # ralf | concat | weighted_logit
+  encoder_mode: frozen         # frozen | finetune | scratch
+  route_drop_max: 2            # electrodes a montage may leave out to sit on a pretraining route (recorded)
+  encoder_dropout: 0.0
+  summary_tokens: 4            # per modality, what the encoder hands the fusion
+  summary_heads: 4
+  embed_dim: 256               # the fusion's width; encoders are projected to it
+  num_fusion_tokens: 8
+  num_heads: 8
+  depth: 2
+  dropout: 0.1
+  residual_weight: 0.5         # reliability-weighted unimodal logits, added to the fused ones
+  gate_floor: 0.0              # RALF: a modality's tokens keep at least this fraction of their
+                               # size at reliability 0 (0 = they vanish with it)
+  gate_detach: false           # RALF: the task loss does not reach the reliability head through
+                               # the gate; the head learns from its corruption target alone
+train:
+  epochs: 60
+  batch_size: 32
+  lr: 3.0e-4                   # the fusion, the pools, the montage adapters, the heads; 1e-4 left the frozen runs underfit
+  encoder_lr_scale: 1.0        # finetune only: the pretrained core as a multiple of lr ...
+  layer_decay: 0.75            # ... decayed top-down over the Transformer
+  weight_decay: 0.05
+  warmup_ratio: 0.1
+  min_lr_ratio: 0.01
+  grad_clip: 1.0
+  precision: bf16
+  patience: 10
+  class_weight: sqrt           # none | sqrt | balanced; SeizeIT2 is ~1:50
+  modality_dropout: 0.3        # per present modality, in the consistency view
+  uni_weight: 0.2
+  reliability_weight: 1.0      # RALF only
+  consistency_weight: 1.0
+corruption:                    # physiowave.pretrain.corruption, before the encoders
+  enabled: true
+  prob: 0.5
+  kinds: [noise, drift, saturation, bad_channel, dropout]
+  max_level: 1.0
+eval:
+  corruption_severity: 0.7     # the test matrix's corrupted conditions

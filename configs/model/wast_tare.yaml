@@ -1,0 +1,41 @@
+# Full model: WAST + TARE + SSL/GL spatial branches + topology-aware compression.
+defaults: [model/wast]
+model:
+  name: wast_tare
+  use_tare: true
+  use_spatial_frontend: true
+  use_compression: true
+  tare:
+    fusion_mode: concat_mlp   # 'film' is the ablation
+    coord_fourier_bands: 8
+    coord_dim: 128
+    name_dim: 32
+    meta_dim: 32
+  compression:
+    num_queries: 16           # K; EEG default. Ablations: 4 / 8 / 16 / 32
+    num_heads: 4
+    use_graph_bias: true
+  spatial:
+    use_raw: true             # the Laplacian branches are ADDED to raw, never replace it
+    geo_sigma: 0.5
+    lambda_geo_init: 1.0
+    lambda_dyn_init: 0.5
+    ssl:
+      enabled: true           # strict spherical-spline CSD (Perrin et al. 1989)
+      stiffness: 4
+      lambda_reg: 1.0e-5
+      n_legendre: 50
+      min_channels: 16        # below this the spline fit is unreliable -> auto-skip
+      gate_init: 0.1
+      cache_dir: ./cache/ssl
+    gl:
+      enabled: true           # CSD-inspired learnable graph Laplacian
+      sigma: 0.5
+      gate_init: 0.1
+    dyn:
+      enabled: true
+      dyn_graph_type: cov     # 'cov' | 'wpli' | 'imcoh'
+      dyn_graph_input: raw    # 'raw' | 'ssl'
+      band_wise: true         # broadband is an ablation only
+      shrinkage: ledoit_wolf
+      correlation: true

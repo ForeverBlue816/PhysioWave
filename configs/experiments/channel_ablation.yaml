@@ -1,0 +1,30 @@
+# Tier 1 of the experiment matrix: the channel/spatial encoding ladder that the
+# main paper table reports.  Each rung adds exactly one mechanism.
+defaults: [pretrain/eeg]
+run_name: exp_channel_ablation
+experiment:
+  name: channel_ablation
+  tier: 1
+  seeds: [0, 1, 2]
+  variants:
+    - {id: "1_legacy",            model: {name: legacy}}
+    - {id: "2_legacy_chanid",     model: {name: legacy}, notes: "legacy + channel identity embedding"}
+    - {id: "3_wast",              model: {name: wast}}
+    - {id: "4_wast_coord",        model: {name: wast_tare, use_tare: true, use_compression: false,
+                                          use_spatial_frontend: false,
+                                          tare: {use_coordinates: true, use_name_embedding: false,
+                                                 use_reference_metadata: false}}}
+    - {id: "5_wast_coord_ref",    model: {name: wast_tare, use_tare: true, use_compression: false,
+                                          use_spatial_frontend: false,
+                                          tare: {use_coordinates: true, use_name_embedding: true,
+                                                 use_reference_metadata: true}}}
+    - {id: "6_wast_tare_geo",     model: {name: wast_tare,
+                                          spatial: {ssl: {enabled: false}, gl: {enabled: false},
+                                                    dyn: {enabled: false}}}}
+    - {id: "7_wast_tare_geo_dyn", model: {name: wast_tare,
+                                          spatial: {ssl: {enabled: false}, gl: {enabled: false},
+                                                    dyn: {enabled: true, band_wise: true,
+                                                          dyn_graph_type: cov}}}}
+    - {id: "8_full_ssl_gl",       model: {name: wast_tare,
+                                          spatial: {ssl: {enabled: true}, gl: {enabled: true},
+                                                    dyn: {enabled: true}}}}

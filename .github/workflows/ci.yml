@@ -1,0 +1,40 @@
+# CI for the TPAMI extension: unit tests, the terminology guard, and a CPU smoke run.
+# The legacy top-level modules are exercised through tests/test_legacy.py, so a
+# change that breaks the original entry points fails here.
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install torch --index-url https://download.pytorch.org/whl/cpu
+          pip install -r requirements.txt
+          pip install pytest ruff
+
+      - name: Terminology guard (constraints A / B / D)
+        run: pytest tests/test_terminology.py -q
+
+      - name: Unit tests
+        run: pytest tests/ -q
+
+      - name: Lint the new package only
+        run: ruff check physiowave tests
+        continue-on-error: true
+
+      - name: CPU smoke run
+        run: PYTHON=python bash scripts/run_tpami.sh smoke
+
+      - name: Full pipeline dry run
+        run: PYTHON=python bash scripts/run_tpami.sh all --dry-run

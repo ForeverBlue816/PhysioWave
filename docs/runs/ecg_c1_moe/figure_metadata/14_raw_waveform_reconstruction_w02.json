@@ -1,0 +1,69 @@
+{
+  "checkpoint": "$PW_FAST_ROOT/runs/pretrain_ecg_c1_moe/best.pth",
+  "checkpoint_sha256": "4f740ab80f970ff31ee2e30bc4a6a185258b14938f22ea8b678652fdfe1703e0",
+  "epoch": 33,
+  "global_step": 33000,
+  "channel_vocab_sha256": "3448b5a10f662855971595abd569493e46fb1d821a51a3f1d676944d14b87a28",
+  "modality": "ecg",
+  "plotting_script_git_commit": "22df8ba3e2384c532b4e953f708a8834f3f27e40",
+  "split": "val",
+  "mask_seed": 1234,
+  "manifest": "$SCRATCH/bio/ecg/ecg_c1_corpus/merged/manifest_val.jsonl",
+  "objective": {
+    "spec_weight": 0.5,
+    "raw_weight": 0.5,
+    "raw_beta": 0.5,
+    "fold_kl": 0.001,
+    "mask_before_frontend": true,
+    "normalize_spec_target": true
+  },
+  "objective_equation": "0.5*L_spec + 0.5*L_raw + 0.001*L_foldKL",
+  "metrics_last_epoch": 56,
+  "figure": "14_raw_waveform_reconstruction_w02",
+  "generated_utc": "2026-10-07T05:21:52.635368+00:00",
+  "figure_text": [
+    "Raw-head reconstruction, one row per route. The trace is PREPROCESSED, window-normalised ECG -- not raw mV values, and not the folded wavelet representation. Shaded = masked before the frontend; the prediction is drawn only there, because visible patches are unsupervised.  Window 3 of 4 surveyed per route.",
+    "Raw-head reconstruction, one row per route. The trace is PREPROCESSED, window-normalised ECG -- not raw mV values, and not the folded wavelet representation. Shaded = masked before the frontend; the prediction is drawn only there, because visible patches are unsupervised.  Window 3 of 4 surveyed per route."
+  ],
+  "paper_mode": true,
+  "rows": [
+    {
+      "route_id": "L12_500",
+      "dataset_id": "code15",
+      "channel": "I",
+      "channel_slot": 0,
+      "subject_id": "code15_1065774",
+      "recording_id": "exams_part4.hdf5#1249255",
+      "window_index": 4275,
+      "mask_seed": 1234,
+      "raw_corr": 0.9218237216562617,
+      "raw_nmse": 0.15100122743541308,
+      "raw_mae": 0.06677594548026225,
+      "raw_rmse": 0.09112388239747672,
+      "window_raw_nmse_rank": 2,
+      "n_windows_surveyed": 4
+    },
+    {
+      "route_id": "L1_250",
+      "dataset_id": "icentia11k",
+      "channel": "patch1",
+      "channel_slot": 0,
+      "subject_id": "p01172",
+      "recording_id": "p01/p01172/p01172_s10",
+      "window_index": 55629,
+      "mask_seed": 1234,
+      "raw_corr": 0.7931535682206022,
+      "raw_nmse": 0.3818027726431056,
+      "raw_mae": 0.20020914375289742,
+      "raw_rmse": 0.5894739226292297,
+      "window_raw_nmse_rank": 3,
+      "n_windows_surveyed": 4
+    }
+  ],
+  "survey_index": 2,
+  "n_windows_surveyed": 4,
+  "dataset_id": "code15",
+  "route_id": "L12_500",
+  "channel": "I",
+  "note": "window-normalised preprocessed ECG, not raw mV values, and not the folded wavelet representation; the prediction is shown on masked patches only. One row per route; the unprefixed arrays are the first route's, for scripts written against the single-route version."
+}

@@ -1,0 +1,22 @@
+# Tier 3: RALF under complete, missing and corrupted modalities.
+defaults: [fusion/ralf]
+run_name: exp_multimodal_robustness
+experiment:
+  name: multimodal_robustness
+  tier: 3
+  seeds: [0, 1, 2]
+  # Baseline arm: plain concatenation fusion, for the "original fusion vs RALF"
+  # comparison. Selected with model.name=concat_fusion.
+  fusion_variants: [ralf, concat_fusion]
+  conditions:
+    - {id: complete,        modalities: [eeg, ecg, semg]}
+    - {id: eeg_only,        modalities: [eeg]}
+    - {id: ecg_only,        modalities: [ecg]}
+    - {id: semg_only,       modalities: [semg]}
+    - {id: eeg_ecg,         modalities: [eeg, ecg]}
+    - {id: eeg_semg,        modalities: [eeg, semg]}
+    - {id: ecg_semg,        modalities: [ecg, semg]}
+    - {id: eeg_noise,       modalities: [eeg, ecg, semg], corrupt: {eeg: noise}}
+    - {id: eeg_bad_channel, modalities: [eeg, ecg, semg], corrupt: {eeg: bad_channel}}
+    - {id: ecg_saturation,  modalities: [eeg, ecg, semg], corrupt: {ecg: saturation}}
+    - {id: semg_dropout,    modalities: [eeg, ecg, semg], corrupt: {semg: dropout}}

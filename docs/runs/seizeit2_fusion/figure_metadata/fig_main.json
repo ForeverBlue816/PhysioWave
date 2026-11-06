@@ -1,0 +1,55 @@
+{
+  "checkpoint": "$PW_FAST_ROOT/runs/fusion/ralf_frozen_szo/best.pth",
+  "epoch": 5,
+  "run": "ralf_frozen_szo",
+  "git_commit": "1628604a7493139288420cd3887e9b5044913618",
+  "figure": "fig_main",
+  "generated_utc": "2026-10-21T03:40:57.772044+00:00",
+  "figure_text": [
+    "SeizeIT2, official split, 29 test patients (2,912 h, 181 seizures): the dataset paper's scoring (any-overlap, recording means); (a), (b), (d) share the 11 FA/h budget, the SVM's operating point; (c) corruption severity 0.7",
+    "SeizeIT2, official split, 29 test patients (2,912 h, 181 seizures): the dataset paper's scoring (any-overlap, recording means); (a), (b), (d) share the 11 FA/h budget, the SVM's operating point; (c) corruption severity 0.7"
+  ],
+  "paper_mode": true,
+  "fa_budget": 11.0,
+  "fusion_runs": [
+    "ralf_frozen_szo",
+    "concat_frozen_szo",
+    "weighted_logit_frozen_szo",
+    "ralf_finetune_szo",
+    "ralf_scratch_szo"
+  ],
+  "eeg_runs": [
+    "eeg_c1_finetune_sze",
+    "eeg_luna_huge_finetune_sze",
+    "eeg_labram_finetune_sze",
+    "eeg_eegpt_frozen_sze"
+  ],
+  "published": [
+    [
+      "SVM (Bhagubai et al.)",
+      71.1,
+      11.0,
+      "s"
+    ],
+    [
+      "ChronoNet (Bhagubai et al.)",
+      84.2,
+      100.5,
+      "D"
+    ]
+  ],
+  "subsets": [
+    "eeg_only",
+    "ecg_only",
+    "emg_only",
+    "eeg_ecg",
+    "eeg_emg",
+    "ecg_emg",
+    "complete"
+  ],
+  "corruption_severity": 0.7,
+  "per_patient_ref": "eeg_c1_finetune_sze",
+  "th_main": 0.16,
+  "th_ref": 0.46,
+  "patients_without_seizures": []
+}

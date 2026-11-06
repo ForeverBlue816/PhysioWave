@@ -1,0 +1,60 @@
+# sEMG C1 downstream: UCI "EMG data for gestures" (Lobov et al. 2018), 6 gestures,
+# inter-session: series 1 trains, series 2 tests. Myo armband, 8 electrodes, resampled to the Myo's 200 Hz,
+# 1 s windows.
+#
+#   bash EMG/finetune_emg_c1.sh  (TASK=uci_emg_xsess MODE=ft|probe|scratch)
+#
+# Data from EMG/emg_downstream_prep.py --task uci_emg_xsess. The model block is the
+# pretrained encoder's (configs/pretrain/emg_c1_moe.yaml). The montage is not a
+# pretraining route, so the wavelet frontend and patch embedding are built for
+# it and trained; the channel encoder and Transformer come from pretraining.
+trainer: finetune
+run_name: finetune_emg_c1_uci_emg_xsess
+data:
+  modality: emg
+model:
+  name: emg_c1
+  embed_dim: 384
+  depth: 6
+  num_heads: 6
+  mlp_ratio: 4.0
+  norm: rmsnorm
+  ffn: swiglu
+  qk_norm: true
+  max_level: 3
+  wave_kernel_size: 16
+  wavelet_names: [db2, db4, db7, sym4, sym5]
+  wave_init_mode: pad
+  use_separate_channel: true
+  fold_synthesis: 3
+  fold_gamma: 0.1
+  channel_encoding: id
+  channel_embed_dim: 64
+  dropout: 0.1
+  emg_c1:
+    patch_samples: 25             # 0.125 s at 200 Hz, the pretraining patch length
+    pool: mean
+    head_dropout: 0.1
+    # A probe freezes what came from pretraining and trains the head AND the
+    # fresh frontend/patcher -- freezing those at their random initialisation
+    # would hand the pretrained Transformer a projection it never saw.
+    freeze_scope: pretrained
+    pretrained: null            # set it (MODE=ft/probe), or leave it: the control
+train:
+  epochs: 30
+  warmup_ratio: 0.1
+  lr: 1.0e-4
+  # Layer-wise decay over the pretrained Transformer (finetune_main.py): the
+  # fresh frontend and head at lr, the top block at 0.75 lr, block 0 at 0.18
+  # lr, the channel encoder at 0.13 lr. Plain fine-tuning at one rate
+  # reproduced the from-scratch curve on every sEMG task. Not applied when no
+  # encoder is loaded (MODE=scratch).
+  layer_decay: 0.75
+  min_lr_ratio: 0.01
+  weight_decay: 0.05
+  batch_size: 64
+  precision: bf16
+  grad_clip: 1.0
+  label_smoothing: 0.0
+  patience: 10
+  select_by: acc

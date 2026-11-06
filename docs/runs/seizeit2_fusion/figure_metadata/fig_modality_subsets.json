@@ -1,0 +1,21 @@
+{
+  "checkpoint": "$PW_FAST_ROOT/runs/fusion/ralf_frozen_szo/best.pth",
+  "epoch": 5,
+  "run": "ralf_frozen_szo",
+  "git_commit": "dee0de2e333e08cd85e2068e234f7aaf6489b058",
+  "figure": "fig_modality_subsets",
+  "generated_utc": "2026-10-16T08:12:02.400742+00:00",
+  "figure_text": [
+    "Modality subsets: which signals carry the detection",
+    "Modality subsets: which signals carry the detection"
+  ],
+  "paper_mode": true,
+  "fa_budget": 11.0,
+  "runs": [
+    "ralf_frozen_szo",
+    "concat_frozen_szo",
+    "weighted_logit_frozen_szo",
+    "ralf_finetune_szo",
+    "ralf_scratch_szo"
+  ]
+}

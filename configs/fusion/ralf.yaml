@@ -1,0 +1,45 @@
+defaults: [base]
+run_name: fusion_ralf
+data:
+  modality: multimodal
+model:
+  name: ralf
+  encoders:
+    eeg:
+      sampling_rate: 256.0
+      embed_dim: 256
+      wast: {patch_size: 64, level: 3, wavelet: bior4.4, boundary_mode: reflect}
+      compression: {num_queries: 16}
+      backbone: {depth: 4, num_heads: 8}
+    ecg:
+      sampling_rate: 256.0
+      embed_dim: 256
+      wast: {patch_size: 64, level: 3, wavelet: bior4.4, boundary_mode: reflect}
+      compression: {num_queries: 8}
+      backbone: {depth: 4, num_heads: 8}
+      spatial: {ssl: {enabled: false}}
+    semg:
+      sampling_rate: 256.0
+      embed_dim: 256
+      wast: {patch_size: 64, level: 3, wavelet: bior4.4, boundary_mode: reflect}
+      compression: {num_queries: 8}
+      backbone: {depth: 4, num_heads: 8}
+      spatial: {ssl: {enabled: false}}
+  ralf:
+    num_fusion_tokens: 8
+    num_heads: 8
+    depth: 2
+    num_classes: 5              # MPDB's five behaviours; the C1 path (fusion/c1_ralf) has a head per task
+    modality_dropout: 0.2
+    residual_weight: 0.5
+    consistency_weight: 1.0
+    reliability_weight: 1.0
+fusion:
+  pretrained:
+    eeg: null
+    ecg: null
+    semg: null
+  corruption:
+    enabled: true
+    prob: 0.5
+    kinds: [noise, drift, saturation, bad_channel, dropout]

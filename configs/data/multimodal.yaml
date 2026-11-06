@@ -1,0 +1,14 @@
+# Example: aligned EEG + ECG + limb sEMG streams for RALF fusion training.
+data:
+  modality: multimodal
+  datasets: [mpdb, seizeit2]
+  roots:
+    mpdb: /path/to/mpdb
+    seizeit2: /path/to/seizeit2     # requires a signed data use agreement
+  manifest_dir: ./manifests
+  split_ratios: [0.8, 0.1, 0.1]
+  preprocess:
+    target_sampling_rate: 256.0
+    notch_freq: 50.0
+    normalize: zscore
+    cache_dir: ./cache/preprocessed

@@ -1,0 +1,91 @@
+# Sleep-EDF on a C1 pretrained encoder.
+#
+# WHAT TRANSFERS HERE IS THE TRANSFORMER, AND THAT IS THE QUESTION. Two bipolar
+# derivations at 100 Hz is not one of the four routes and cannot be made into
+# one: the wavelet filters are per-electrode and the patcher is per patch
+# length. So the frontend and the patcher are FRESH, sized for this montage,
+# and what comes from pretraining is the channel-name embedding, its gate, and
+# the shared transformer.
+#
+# That makes this the harder and more interesting of the two downstream tests.
+# P300 reuses almost the whole encoder; this reuses only the part that is
+# supposed to be montage-independent, which is the claim the architecture makes.
+#
+# A patch is 50 samples, 0.5 s at 100 Hz -- the timescale of a sleep spindle
+# (0.5-2 s) and a K-complex (0.5-1.5 s). 3000 samples give 60 patches per
+# channel, so 2 x 60 = 120 tokens.
+#
+# Fpz-Cz and Pz-Oz are in the channel vocabulary, so their embedding rows exist
+# -- but the pretraining corpora are monopolar, so those rows are very likely
+# still at their initialisation. What transfers is the MECHANISM, not a
+# representation of these two derivations.
+#
+#   python -m physiowave.train.finetune_main --config finetune/eeg_c1_sleep \
+#       --data-dir $PW_DATA_EEG/sleep_edf --num-classes 5 \
+#       --set model.eeg_c1.pretrained=<exported.pth>
+#
+# THE CONTROL is the same command with that --set left off. Run both.
+trainer: finetune
+run_name: finetune_eeg_c1_sleep
+
+data:
+  modality: eeg
+
+model:
+  name: eeg_c1
+  # 512/8/8, matching configs/pretrain/eeg_c1_moe.yaml as of 2026-08-30. These
+  # three numbers are not a choice here: the exported encoder's weights have
+  # these shapes, and a mismatch is a shape error at load time. They move
+  # together with the pretraining config or the transfer does not happen.
+  embed_dim: 512
+  depth: 8
+  num_heads: 8
+  mlp_ratio: 4.0
+  norm: rmsnorm
+  ffn: swiglu
+  qk_norm: true
+  max_level: 3
+  wave_kernel_size: 16
+  wavelet_names: [sym4, sym5, db6, sym8, db8]
+  wave_init_mode: pad
+  use_separate_channel: true
+  fold_synthesis: 3
+  fold_gamma: 0.1
+  channel_encoding: id
+  channel_embed_dim: 64
+  dropout: 0.1
+
+  eeg_c1:
+    # No route_id: this montage gets its own frontend.
+    # in_channels, window_samples, sampling_rate and channel_names
+    # come from the HDF5. Naming them here would be a second copy.
+    patch_samples: 50
+    # Mean over the tokens, LayerNorm, dropout, one Linear. heads.py still
+    # carries the other shapes -- pool=stat (attentive statistics pooling),
+    # pool=time, pool=attn, channel_pool, head_max_norm, spatial_filter -- and
+    # each is one --set away, so the ablations survive while the default stays
+    # the head this evaluation has always had.
+    pool: mean
+    head_dropout: 0.1
+    pretrained: null
+
+# EEGPT's downstream budget for this dataset, from finetune_EEGPT_SleepEDF.py:
+# 40 epochs, batch 8*4, AdamW weight_decay=0.01, OneCycleLR max_lr=4e-4
+# pct_start=0.2, plain CrossEntropyLoss, Cohen's kappa as the monitor.
+#
+# Their max_lr is taken as-is here rather than scaled down the way P300's is:
+# this montage gets a FRESH frontend and patcher, and a randomly initialised
+# filter bank needs the larger step.
+train:
+  epochs: 40
+  warmup_ratio: 0.2
+  lr: 4.0e-4
+  min_lr_ratio: 0.01
+  weight_decay: 0.01
+  batch_size: 32               # theirs, and until now this line did nothing:
+                               # finetune_main read no train: block at all, so
+                               # every sleep run was at the argparse default 64
+  precision: bf16
+  grad_clip: 1.0
+  label_smoothing: 0.0
+  select_by: kappa             # their monitor score for a multi-class task

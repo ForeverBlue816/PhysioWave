@@ -1,0 +1,84 @@
+# BCI Competition IV 2a -- four-class motor imagery (left hand, right hand,
+# feet, tongue), 22 electrodes, 4 s after the cue.
+# On a C1 pretrained encoder, on EEGPT's preparation -- see the converter's
+# docstring for what is reproduced and what is not, and why.
+#
+#   python EEG/bcic_iv2_finetune.py --dataset 2a \
+#       --raw-dir $PW_DATA_EEG/bcic_iv2a --out-dir $PW_DATA_EEG/bcic2a_f0 --fold 0
+#   bash EEG/finetune_eegpt_bench.sh            # TASK=bcic2a PRETRAINED=...
+#
+# or directly:
+#
+#   python -m physiowave.train.finetune_main --config finetune/eeg_c1_bcic2a \
+#       --data-dir $PW_DATA_EEG/bcic2a_f0 --num-classes 4 \
+#       --output-dir <dir> --set model.eeg_c1.pretrained=<eeg_c1_encoder.pth>
+#
+# THE CONTROL is the same command without the --set. Run both: the difference
+# between them is the measurement.
+
+trainer: finetune
+run_name: finetune_eeg_c1_bcic2a
+
+data:
+  modality: eeg
+
+model:
+  name: eeg_c1
+  # 512/8/8 because the exported encoder is. Not a choice: a mismatch is a
+  # shape error at load time. Moves with configs/pretrain/eeg_c1_moe.yaml.
+  embed_dim: 512
+  depth: 8
+  num_heads: 8
+  mlp_ratio: 4.0
+  norm: rmsnorm
+  ffn: swiglu
+  qk_norm: true
+  max_level: 3
+  wave_kernel_size: 16
+  wavelet_names: [sym4, sym5, db6, sym8, db8]
+  wave_init_mode: pad
+  use_separate_channel: true
+  fold_synthesis: 3
+  fold_gamma: 0.1
+  channel_encoding: id
+  channel_embed_dim: 64
+  dropout: 0.1
+
+  eeg_c1:
+    # No route_id: this montage gets its own frontend and patcher, freshly
+    # initialised from the wavelet families above, as P300 and Sleep-EDF do.
+    # What transfers is the channel-name embedding, its gate and the shared
+    # transformer. in_channels, window_samples, sampling_rate and
+    # channel_names come from the HDF5.
+    patch_samples: 64           # 250 ms at 256 Hz, EEGPT's patch duration
+                                # 1024 / 64 = 16 positions, x 22 = 352 tokens
+    pool: mean
+    head_dropout: 0.1
+    pretrained: null           # set it, or leave it for the from-scratch control
+
+# 30 epochs of full fine-tuning. EEGPT's linear_probe_EEGPT_BCIC2A.py trains
+# 100 epochs, but that is a probe on a frozen encoder; every parameter moves
+# here, and on a few thousand windows 100 epochs is mostly memorisation.
+#
+# The schedule, per step: linear warmup over the first 10% (3 epochs), then a
+# cosine to 1% of the peak by the last step -- annealed fully inside the run, so
+# the last epochs are low-LR refinement rather than a truncated decay.
+train:
+  epochs: 30
+  warmup_ratio: 0.1            # 3 of 30 epochs. 0.2 (EEGPT's pct_start) would
+                               # spend 6 epochs warming up a 30-epoch run.
+  lr: 2.5e-4
+  min_lr_ratio: 0.01           # cosine floor: 2.5e-6
+  weight_decay: 0.01
+  batch_size: 64
+  precision: bf16
+  grad_clip: 1.0
+  label_smoothing: 0.1         # EEGPT uses none. Smoothing only moves the loss
+                               # floor -- on two classes the smoothed loss cannot
+                               # go below ~0.2 however good the model -- and the
+                               # checkpoint is selected on the metric below, not
+                               # on the loss, so a flat-looking loss is expected.
+  select_by: kappa              # EEGPT's monitor for multi-class tasks
+                               # (their Appendix D: "AUROC as the monitor score
+                               # for binary classification and Cohen's Kappa as
+                               # the monitor score for multi-class")

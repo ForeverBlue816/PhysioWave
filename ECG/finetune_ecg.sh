@@ -3,80 +3,105 @@
 # ============================================================================
 # ECG Fine-tuning Script for PhysioWave
 # ============================================================================
-# This script demonstrates how to fine-tune a pretrained BERT Wavelet 
-# Transformer model for ECG classification tasks (e.g., arrhythmia detection).
+# Single-label ECG classification (default: PTB-XL, 5 diagnostic superclasses)
+# on top of a pretrained ECG encoder.
 #
 # Usage:
-#   1. Modify the paths to point to your ECG dataset files
-#   2. Update the pretrained model path
-#   3. Adjust num_classes based on your ECG classification task
-#   4. Run: bash finetune_ecg_example.sh
+#   1. Build the labelled HDF5 files:
+#        python ECG/ptbxl_finetune.py --out-dir $SCRATCH/bio/ecg/ptbxl
+#   2. Run from the repository root:  bash ECG/finetune_ecg.sh
+#
+# Paths come from scripts/cineca_env.sh:
+#   data $SCRATCH/bio/ecg/<task>   checkpoints/outputs $PW_FAST_ROOT/runs
+#
+# Comments sit on their own lines on purpose: a `#` after a trailing `\` does
+# not comment out anything, it truncates the command at that point.
 # ============================================================================
 
-# Number of GPUs to use for distributed training
-NUM_GPUS=4
+set -euo pipefail
 
-# Data paths (modify these to point to your ECG dataset)
-TRAIN_FILE="path/to/ecg_train.h5"
-VAL_FILE="path/to/ecg_val.h5"
-TEST_FILE="path/to/ecg_test.h5"
+cd "$(dirname "${BASH_SOURCE[0]}")/.."
+
+# shellcheck disable=SC1091
+source "$(pwd)/scripts/cineca_env.sh"
+
+[[ "${PW_ALLOW_NO_GPU:-0}" == "1" ]] || pw_require_gpu || exit 1
+pw_require_python_deps || exit 1
+
+# Number of GPUs to use for distributed training
+NUM_GPUS="${NUM_GPUS:-4}"
+
+# Downstream task; labelled HDF5 files live at $SCRATCH/bio/ecg/<TASK>/
+TASK="${TASK:-ptbxl}"
+DATA_DIR="${DATA_DIR:-${PW_DATA_ECG}/${TASK}}"
+
+TRAIN_FILE="${TRAIN_FILE:-${DATA_DIR}/train.h5}"
+VAL_FILE="${VAL_FILE:-${DATA_DIR}/val.h5}"
+TEST_FILE="${TEST_FILE:-${DATA_DIR}/test.h5}"
 
 # Pretrained ECG model checkpoint
-PRETRAINED_MODEL="path/to/pretrained_ecg/best_model.pth"
+PRETRAINED_MODEL="${PRETRAINED_MODEL:-${PW_CKPT_ROOT}/pretrain_ecg/best_model.pth}"
 
 # Output directory for fine-tuning results
-OUTPUT_DIR="./finetune_ecg_output"
+OUTPUT_DIR="${OUTPUT_DIR:-${PW_CKPT_ROOT}/finetune_ecg_${TASK}}"
 
-# Create output directory if it doesn't exist
-mkdir -p ${OUTPUT_DIR}
+for f in "${TRAIN_FILE}" "${VAL_FILE}" "${TEST_FILE}"; do
+    [[ -f "${f}" ]] || { echo "ERROR: missing ${f}" >&2; exit 1; }
+done
 
-# Launch distributed fine-tuning for ECG
-torchrun --nproc_per_node=${NUM_GPUS} finetune.py \
+# The checkpoint is optional: finetune.py falls back to random init, which is
+# how you smoke-test the pipeline before any encoder has been pretrained.
+if [[ ! -f "${PRETRAINED_MODEL}" ]]; then
+    echo "WARNING: no checkpoint at ${PRETRAINED_MODEL}; training from scratch." >&2
+    PRETRAINED_ARG=()
+else
+    PRETRAINED_ARG=(--pretrained_path "${PRETRAINED_MODEL}")
+fi
+mkdir -p "${OUTPUT_DIR}"
+
+echo "ECG fine-tuning: task=${TASK} data=${DATA_DIR} out=${OUTPUT_DIR}"
+
+# ---------------------------------------------------------------------------
+# The architecture block must match the pretrained model exactly; the wavelet
+# families, kernel size and patch size are the ones ECG/pretrain_ecg.sh used.
+# ---------------------------------------------------------------------------
+"${PW_TORCHRUN[@]}" --standalone --nproc_per_node="${NUM_GPUS}" finetune.py \
   --train_file "${TRAIN_FILE}" \
   --val_file "${VAL_FILE}" \
   --test_file "${TEST_FILE}" \
-  --pretrained_path "${PRETRAINED_MODEL}" \
-  \
-  `# ECG Model Architecture (must match pretrained model)` \
-  --in_channels 12 \                       # 12-lead ECG
-  --max_level 3 \                          # Wavelet decomposition levels
-  --wave_kernel_size 24 \                  # Wavelet kernel size for ECG
-  --wavelet_names db4 db6 sym4 coif2 \     # Wavelet families for ECG
-  --use_separate_channel \                 # Process each ECG lead separately
-  --patch_size 64 \                        # Temporal patch size
-  --embed_dim 384 \                        # Embedding dimension
-  --depth 8 \                              # Number of Transformer layers
-  --num_heads 12 \                         # Number of attention heads
-  --mlp_ratio 4.0 \                        # MLP expansion ratio
-  --dropout 0.1 \                          # Dropout rate
-  \
-  `# Position Embedding` \
-  --use_pos_embed \                        # Enable position embeddings
-  --pos_embed_type 2d \                    # 2D position encoding for time-frequency
-  \
-  `# Fine-tuning Parameters` \
-  --batch_size 16 \                        # Batch size per GPU
-  --epochs 20 \                            # Fine-tuning epochs
-  --lr 2e-4 \                              # Initial learning rate
-  --min_lr 1e-6 \                          # Minimum learning rate
-  --weight_decay 1e-3 \                    # Weight decay for regularization
-  --grad_clip 1.0 \                        # Gradient clipping threshold
-  --use_amp \                              # Use automatic mixed precision
-  --num_workers 8 \                        # Data loading workers
-  --world_size ${NUM_GPUS} \               # Number of distributed processes
-  \
-  `# Learning Rate Scheduler` \
-  --scheduler cosine \                     # Cosine annealing scheduler
-  --warmup_epochs 5 \                      # Warmup epochs for stable training
-  \
-  `# ECG Classification Head Configuration` \
-  --num_classes 5 \                        # Number of ECG classes (e.g., rhythm types)
-  --pooling mean \                         # Mean pooling over sequence
-  --head_hidden_dim 1024 \                 # Hidden dimension in classification head
-  --head_dropout 0.1 \                     # Dropout in classification head
-  \
-  `# Other Settings` \
-  --seed 42 \                              # Random seed for reproducibility
+  ${PRETRAINED_ARG[@]+"${PRETRAINED_ARG[@]}"} \
+  --in_channels 12 \
+  --max_level 3 \
+  --wave_kernel_size 24 \
+  --wavelet_names db4 db6 sym4 coif2 \
+  --use_separate_channel \
+  --patch_size 64 \
+  --embed_dim 384 \
+  --depth 8 \
+  --num_heads 12 \
+  --mlp_ratio 4.0 \
+  --dropout 0.1 \
+  --use_pos_embed \
+  --pos_embed_type 2d \
+  --batch_size "${BATCH_SIZE:-16}" \
+  --epochs "${EPOCHS:-20}" \
+  --lr "${LR:-2e-4}" \
+  --min_lr 1e-6 \
+  --weight_decay 1e-3 \
+  --grad_clip 1.0 \
+  --use_amp \
+  --num_workers "${NUM_WORKERS:-8}" \
+  --world_size "${NUM_GPUS}" \
+  --scheduler cosine \
+  --warmup_epochs 5 \
+  --num_classes "${NUM_CLASSES:-5}" \
+  --pooling mean \
+  --head_hidden_dim 1024 \
+  --head_dropout 0.1 \
+  --select_by "${SELECT_BY:-loss}" \
+  --patience "${PATIENCE:-0}" \
+  --min_delta "${MIN_DELTA:-0.0}" \
+  --seed "${SEED:-42}" \
   --output_dir "${OUTPUT_DIR}"
 
 echo "ECG fine-tuning completed. Results saved to ${OUTPUT_DIR}"

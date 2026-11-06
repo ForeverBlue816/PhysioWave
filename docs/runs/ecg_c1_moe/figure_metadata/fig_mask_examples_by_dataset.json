@@ -1,0 +1,87 @@
+{
+  "checkpoint": "$PW_FAST_ROOT/runs/pretrain_ecg_c1_moe/best.pth",
+  "checkpoint_sha256": "4f740ab80f970ff31ee2e30bc4a6a185258b14938f22ea8b678652fdfe1703e0",
+  "epoch": 33,
+  "global_step": 33000,
+  "channel_vocab_sha256": "3448b5a10f662855971595abd569493e46fb1d821a51a3f1d676944d14b87a28",
+  "modality": "ecg",
+  "plotting_script_git_commit": "22df8ba3e2384c532b4e953f708a8834f3f27e40",
+  "split": "val",
+  "mask_seed": 1234,
+  "manifest": "$SCRATCH/bio/ecg/ecg_c1_corpus/merged/manifest_val.jsonl",
+  "objective": {
+    "spec_weight": 0.5,
+    "raw_weight": 0.5,
+    "raw_beta": 0.5,
+    "fold_kl": 0.001,
+    "mask_before_frontend": true,
+    "normalize_spec_target": true
+  },
+  "objective_equation": "0.5*L_spec + 0.5*L_raw + 0.001*L_foldKL",
+  "metrics_last_epoch": 56,
+  "figure": "fig_mask_examples_by_dataset",
+  "generated_utc": "2026-10-07T05:21:59.234556+00:00",
+  "figure_text": [
+    "The actual masks the model was given, one fixed window per dataset",
+    "The actual masks the model was given, one fixed window per dataset"
+  ],
+  "paper_mode": true,
+  "examples": [
+    {
+      "dataset_id": "mimic_iv_ecg",
+      "route_id": "L12_500",
+      "subject_id": "p10002859",
+      "recording_id": "mimic-iv-ecg-diagnostic-electrocardiogram-matched-subset-1.0/files/p1000/p10002859/s44133134/44133134",
+      "window_index": 0,
+      "mask_seed": 1234
+    },
+    {
+      "dataset_id": "code15",
+      "route_id": "L12_500",
+      "subject_id": "code15_200276",
+      "recording_id": "exams_part0.hdf5#604999",
+      "window_index": 0,
+      "mask_seed": 1234
+    },
+    {
+      "dataset_id": "sph",
+      "route_id": "L12_500",
+      "subject_id": "sph_S00008",
+      "recording_id": "A00008",
+      "window_index": 0,
+      "mask_seed": 1234
+    },
+    {
+      "dataset_id": "georgia",
+      "route_id": "L12_500",
+      "subject_id": "E00039",
+      "recording_id": "g1/E00039",
+      "window_index": 0,
+      "mask_seed": 1234
+    },
+    {
+      "dataset_id": "medalcare_xl",
+      "route_id": "L12_500",
+      "subject_id": "medalcare_run_S74",
+      "recording_id": "MedalCare-XL/WP2_largeDataset_Noise/avblock/train/run_S74/000001_noise",
+      "window_index": 0,
+      "mask_seed": 1234
+    },
+    {
+      "dataset_id": "icentia11k",
+      "route_id": "L1_250",
+      "subject_id": "p00160",
+      "recording_id": "p00/p00160/p00160_s00",
+      "window_index": 0,
+      "mask_seed": 1234
+    },
+    {
+      "dataset_id": "pulsedb",
+      "route_id": "L1_250",
+      "subject_id": "pulsedb_mimic_p011957",
+      "recording_id": "mimic/p011957/seg000236",
+      "window_index": 0,
+      "mask_seed": 1234
+    }
+  ]
+}

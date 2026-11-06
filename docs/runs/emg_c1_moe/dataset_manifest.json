@@ -1,0 +1,111 @@
+{
+  "routes": {
+    "W16_2000": {
+      "n_channels": 16,
+      "window_samples": 2000,
+      "sampling_rate": 2000,
+      "patch_size": [
+        1,
+        250
+      ],
+      "n_tokens": 128
+    },
+    "A24_2000": {
+      "n_channels": 24,
+      "window_samples": 2000,
+      "sampling_rate": 2000,
+      "patch_size": [
+        1,
+        250
+      ],
+      "n_tokens": 192
+    },
+    "G64_2000": {
+      "n_channels": 64,
+      "window_samples": 2000,
+      "sampling_rate": 2000,
+      "patch_size": [
+        1,
+        250
+      ],
+      "n_tokens": 512
+    }
+  },
+  "datasets": {
+    "cemhsey_5x13": {
+      "route_id": "G64_2000",
+      "n_windows": 453239
+    },
+    "cemhsey_8x8": {
+      "route_id": "G64_2000",
+      "n_windows": 662710
+    },
+    "emg2pose": {
+      "route_id": "W16_2000",
+      "n_windows": 1203781
+    },
+    "emg2qwerty": {
+      "route_id": "W16_2000",
+      "n_windows": 2359161
+    },
+    "hyser": {
+      "route_id": "G64_2000",
+      "n_windows": 274188
+    },
+    "putemg": {
+      "route_id": "A24_2000",
+      "n_windows": 153124
+    }
+  },
+  "target_weights": {
+    "emg2pose": 0.09740659844169722,
+    "emg2qwerty": 0.13636201981233337,
+    "hyser": 0.18595114142775987,
+    "cemhsey_8x8": 0.2890922096762355,
+    "cemhsey_5x13": 0.23907725623662923,
+    "putemg": 0.05211077440534487
+  },
+  "realised_mixture": {
+    "by_step": {
+      "cemhsey_5x13": 0.244,
+      "cemhsey_8x8": 0.282,
+      "emg2pose": 0.105,
+      "emg2qwerty": 0.125,
+      "hyser": 0.183,
+      "putemg": 0.061
+    },
+    "by_window": {
+      "cemhsey_5x13": 0.1361860465116279,
+      "cemhsey_8x8": 0.1573953488372093,
+      "emg2pose": 0.2344186046511628,
+      "emg2qwerty": 0.27906976744186046,
+      "hyser": 0.10213953488372093,
+      "putemg": 0.09079069767441861
+    }
+  },
+  "batch_size_by_route": {
+    "W16_2000": 192,
+    "A24_2000": 128,
+    "G64_2000": 48
+  },
+  "steps_per_epoch": 1000,
+  "parameters": {
+    "total": 12052622,
+    "shared_transformer": 10631808,
+    "wavelet_frontend.W16_2000": 48843,
+    "wavelet_frontend.A24_2000": 100947,
+    "wavelet_frontend.G64_2000": 643707,
+    "patch_embed.2000": 97152,
+    "reconstruction_head.2000": 244858,
+    "raw_reconstruction_head.2000": 244858,
+    "channel_encoder": 15104,
+    "channel_to_token": 24960,
+    "channel_token_gate": 1,
+    "mask_token": 384,
+    "pretraining_only": 490100,
+    "downstream_encoder": 11562522
+  },
+  "channel_vocab_size": 234,
+  "channel_vocab_sha256": "5b4444a9bd5f7c5d48aa893e2ce0dd264fb9dce7bbea00a8401b9a641b57c356",
+  "channel_vocab_modality": "emg"
+}

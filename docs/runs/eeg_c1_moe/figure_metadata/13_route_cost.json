@@ -1,0 +1,24 @@
+{
+  "checkpoint": "$PW_FAST_ROOT/runs/pretrain_eeg_c1_moe/best.pth",
+  "checkpoint_sha256": "4226871943e1ad68b434222c94a3a661642af6852bbf7e43eb84a4f042b5c131",
+  "epoch": 59,
+  "global_step": 44544,
+  "channel_vocab_sha256": "596f2711269e47b22a9335ba991f44b2edd02a5728ff4461487e26c3a9a302e8",
+  "plotting_script_git_commit": "f4b4a90fd93ef51804f9cf0f4e60b8cb351638cb",
+  "split": "val",
+  "mask_seed": 1234,
+  "manifest": "$SCRATCH/bio/eeg/eeg_c1_corpus/merged/manifest_val.jsonl",
+  "objective": {
+    "spec_weight": 0.5,
+    "raw_weight": 0.5,
+    "raw_beta": 0.5,
+    "fold_kl": 0.001,
+    "mask_before_frontend": true,
+    "normalize_spec_target": true
+  },
+  "objective_equation": "0.5*L_spec + 0.5*L_raw + 0.001*L_foldKL",
+  "metrics_last_epoch": 59,
+  "figure": "13_route_cost",
+  "generated_utc": "2026-09-09T05:23:19.128339+00:00",
+  "note": "the multiplier above each bar is wall clock per window relative to that route's share of windows"
+}

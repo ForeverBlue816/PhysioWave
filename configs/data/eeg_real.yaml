@@ -1,0 +1,26 @@
+# Example: real EEG corpora instead of the synthetic smoke set.
+#
+#   python -m physiowave.train.pretrain_main --config pretrain/eeg \
+#     --set data.datasets=[tueg,siena] data.roots.tueg=/data/tueg data.roots.siena=/data/siena
+#
+# Datasets behind a data use agreement are NEVER downloaded automatically; point
+# `roots` at a local copy you already obtained. A dataset without electrode
+# coordinates automatically disables the SSL branch, with the reason logged.
+data:
+  modality: eeg
+  datasets: [tueg, siena]
+  # Mixture over corpora, normalised internally; a corpus's size does not decide
+  # its share. Ignored under DDP (see maybe_weighted_sampler).
+  weights: [0.7, 0.3]
+  roots:
+    tueg: /path/to/tuh_eeg          # requires a signed data use agreement
+    siena: /path/to/siena
+  manifest_dir: ./manifests
+  split_ratios: [0.8, 0.1, 0.1]
+  preprocess:
+    target_sampling_rate: 256.0
+    notch_freq: 50.0                # 60.0 in North America
+    bandpass: [0.5, 45.0]
+    normalize: zscore
+    clip_sigma: 20.0
+    cache_dir: ./cache/preprocessed

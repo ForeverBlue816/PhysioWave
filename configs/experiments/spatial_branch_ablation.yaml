@@ -1,0 +1,30 @@
+# Tier 2: the spatial-branch and channel-relation-graph ablations reviewers ask
+# for.  A_dyn is a spatial statistic, never described as connectivity.
+defaults: [pretrain/eeg]
+run_name: exp_spatial_branch
+experiment:
+  name: spatial_branch_ablation
+  tier: 2
+  seeds: [0, 1, 2]
+  variants:
+    # 9. which spatial branches are active
+    - {id: "9a_raw_only",  model: {spatial: {use_raw: true, ssl: {enabled: false}, gl: {enabled: false}}}}
+    - {id: "9b_raw_gl",    model: {spatial: {use_raw: true, ssl: {enabled: false}, gl: {enabled: true}}}}
+    - {id: "9c_raw_ssl",   model: {spatial: {use_raw: true, ssl: {enabled: true},  gl: {enabled: false}}}}
+    - {id: "9d_raw_gl_ssl", model: {spatial: {use_raw: true, ssl: {enabled: true}, gl: {enabled: true}}}}
+    # 10. A_dyn estimator
+    - {id: "10a_cov_bandwise", model: {spatial: {dyn: {dyn_graph_type: cov,   band_wise: true}}}}
+    - {id: "10b_cov_broadband", model: {spatial: {dyn: {dyn_graph_type: cov,  band_wise: false}}}}
+    - {id: "10c_wpli",         model: {spatial: {dyn: {dyn_graph_type: wpli,  band_wise: true}}}}
+    - {id: "10d_imcoh",        model: {spatial: {dyn: {dyn_graph_type: imcoh, band_wise: true}}}}
+    # 11. what A_dyn is computed on
+    - {id: "11a_dyn_on_raw", model: {spatial: {dyn: {dyn_graph_input: raw}}}}
+    - {id: "11b_dyn_on_ssl", model: {spatial: {dyn: {dyn_graph_input: ssl}}}}
+    # 12. reference-consistency anchor
+    - {id: "12a_anchor_ssl",      pretrain: {ref_consistency: {anchor: ssl}}}
+    - {id: "12b_anchor_pairwise", pretrain: {ref_consistency: {anchor: pairwise}}}
+    # 13. number of latent spatial slots
+    - {id: "13a_K4",  model: {compression: {num_queries: 4}}}
+    - {id: "13b_K8",  model: {compression: {num_queries: 8}}}
+    - {id: "13c_K16", model: {compression: {num_queries: 16}}}
+    - {id: "13d_K32", model: {compression: {num_queries: 32}}}

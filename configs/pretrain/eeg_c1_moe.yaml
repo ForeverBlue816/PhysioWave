@@ -1,0 +1,328 @@
+# EEG C1 multi-route pretraining -- the settled standard model.
+#
+# Deliberately NOT `defaults: [base, model/wast_tare]`. This path shares no
+# module with WAST/TARE, topology compression, reference consistency or query
+# specialisation; inheriting their config would carry keys that silently mean
+# nothing here and make it look as though they were considered.
+#
+# The model block is EEG/finetune_sleep.sh's configuration, which is the one the
+# Sleep-EDF numbers were produced under. Two of its values cannot be single
+# scalars in a multi-frontend model and are named per route by the code instead:
+#   * in_channels  -- 19/32/64/128, one wavelet expert each
+#   * patch_size   -- (1,128) at 256 Hz and (1,256) at 512 Hz, so that a patch
+#                     is 0.5 s on every route. Two patchers, two decoders.
+# Everything else below is shared verbatim.
+trainer: eeg_c1_moe
+run_name: pretrain_eeg_c1_moe
+seed: 42
+output_dir: ${run_name}
+
+data:
+  modality: eeg
+  # Written by EEG/preprocess_pretrain_corpus.py, one directory per dataset;
+  # scripts/build_eeg_c1_manifest.py merges them into these two files.
+  manifest_train: null
+  manifest_val: null
+  # How much of the mixture each dataset gets.
+  #
+  #   balanced       (default, and what null means) P(route)=1/4, then uniform
+  #                  within a route. Size does not enter into it, so no corpus
+  #                  can dominate on volume alone.
+  #   proportional   in proportion to windows held. An epoch is one pass over
+  #                  the corpus; TUEG then carries about three quarters of it.
+  #   temperature:A  P(d) proportional to n**A -- the dial between the two.
+  #                  1.0 is proportional, 0.0 is equal shares. At 0.5 a corpus
+  #                  a hundred times larger gets ten times the windows.
+  #   {id: weight}   an explicit mapping, normalised.
+  #
+  # These govern the share of STEPS. The share of WINDOWS differs, because the
+  # micro-batch is route-specific -- see batch_size_by_route below. Both are
+  # logged every epoch, with passes/epoch beside them.
+  #
+  # temperature:0.5 -- P(d) proportional to n_d**0.5 / b_d, the dial between
+  # `balanced` (size ignored) and `proportional` (size is everything). Both
+  # extremes were run and both failed, in opposite directions:
+  #
+  #   proportional  one pass = 10,573 steps at world 16 and ~10 s/step, so 29 h
+  #                 for a single epoch against a 24 h walltime -- and the
+  #                 mixture it produced was 88.7% TUEG, which is the imbalance
+  #                 `balanced` exists to remove, arriving as a side effect of
+  #                 the epoch definition.
+  #   balanced      P(route)=1/4 regardless of size. At 768 steps over 10
+  #                 epochs the model saw 0.29x of TUEG and 0.27x of HBN while
+  #                 re-reading physionet_mi 20 times and tdbrain 17 times. Most
+  #                 of the compute went into the three smallest corpora.
+  #
+  # At the SAME 768 steps, temperature:0.5 turns those wasted re-reads into
+  # data the model has not seen:
+  #
+  #                    balanced          temperature:0.5
+  #     tueg             0.29x                0.33x
+  #     hbn              0.27x                1.05x     <- a full pass
+  #     physionet_mi    19.92x                6.36x
+  #     tdbrain         17.08x                4.16x
+  #
+  # HBN is 1.35 M windows and the second largest corpus; under `balanced` it
+  # shares E128_512 with HGD, which is a thirtieth of its size, and the route's
+  # equal share left it seeing a quarter of one pass over a whole run.
+  #
+  # It costs 7.5 M windows over the run against balanced's 9.1 M, because a
+  # larger share of steps goes to E128_512 and that route draws 24 windows a
+  # step rather than 128. Fewer windows, more DISTINCT windows -- which is the
+  # quantity that was short.
+  #
+  # WEIGHTS=balanced or WEIGHTS=proportional at submission if this is wrong.
+  weights: temperature:0.5
+
+# ---------------------------------------------------------------------------
+# The self-supervised objective
+#
+#   L = spec_weight * MSE( pred_spec, stopgrad(clean folded wavelet, per-patch
+#                                              normalised) )
+#     + raw_weight  * SmoothL1( pred_raw, stopgrad(clean preprocessed EEG) )
+#     + fold_kl     * ScaleFold KL
+#
+# EQUAL WEIGHTS. Both heads read the same encoder, and 0.5/0.5 says the encoder
+# is answerable to both: a representation that predicts the folded wavelet of a
+# hidden half-second and one that predicts its waveform are different
+# constraints, and weighting one at a quarter of the other made the second an
+# ornament -- a term whose gradient the first could always outvote. The two are
+# not comparable in MAGNITUDE (an MSE on normalised coefficients against a
+# SmoothL1 on z-scored volts), which is exactly why the weights are not tuned
+# from their loss values; the comparable numbers are masked_{spec,raw}_corr and
+# masked_{spec,raw}_nmse, which the trainer reports per route and per dataset.
+#
+# THE WIDTH CHANGED ON 2026-08-30, and with it every earlier checkpoint. The
+# transformer is 512/8/8 rather than 384/6/6 -- 25.2 M parameters against
+# 10.6 M -- and no checkpoint written before that date can be resumed from or
+# initialised from, because the state dict shapes do not match. The runs at
+# 384/6/6 are a separate series and their numbers are not comparable to these.
+#
+# Both targets are stop-gradient: they are produced by the frontend being
+# trained, so an attached target could be moved toward the prediction instead.
+#
+# mask_before_frontend zeroes the masked patches in the SIGNAL before the
+# wavelet frontend, rather than only replacing tokens after it. The frontend
+# has temporal convolution and cross-scale attention, so without this a masked
+# patch has already spread into its neighbours' features by the time the mask
+# token replaces it.
+#
+# THE ABLATION LADDER that established the two mechanisms was run at the
+# earlier 1.0/0.25 weighting and is preserved at those values in
+# eeg_c1_moe_ablation_{a,b}.yaml -- an ablation compared against a config that
+# has since moved is not an ablation:
+#
+#   A  spec 1.0  raw 0.00  mask_before_frontend: false   -- detach alone
+#   B  spec 1.0  raw 0.25  mask_before_frontend: false   -- + raw fidelity
+#   C  spec 1.0  raw 0.25  mask_before_frontend: true    -- + no-leak masking
+#
+# This file is C's mechanisms at the final weighting. The pre-detach objective
+# is deliberately NOT reachable: a target that can be moved by the model is not
+# a configuration option, and the runs that used it already exist as
+# checkpoints.
+#
+# THIS BLOCK IS THE ONLY SOURCE OF THESE NUMBERS. The trainer, the startup
+# banner, the figures and scripts/eeg_c1_progress.py all read them through
+# physiowave.eeg_c1.objective.resolve_eeg_c1_objective. Until this change they
+# each carried their own default and the visualizer read a `train:` key the
+# config had stopped writing; the numbers agreed only because they were all
+# still 1.0/0.25. Moving this line to 0.5 is exactly the edit that would have
+# separated them -- training at raw 0.5 while the figure said raw 0.25, with
+# nothing in the pipeline able to notice.
+objective:
+  spec_weight: 0.5
+  raw_weight: 0.5
+  raw_beta: 0.5              # SmoothL1 knee, in z-scored units
+  fold_kl: 1.0e-3
+  mask_before_frontend: true
+  # THE TARGET MOVES. It is the frontend's own output, detached -- which stops
+  # the gradient and does not stop the drift. Measured over seven epochs: the
+  # target's standard deviation grew 67% while the prediction's correlation
+  # with it did not move (0.689 -> 0.692), so the MSE nearly tripled while the
+  # model tracked exactly as well as before. A loss that reports a model
+  # getting worse when it is not cannot select a checkpoint, cannot stop early,
+  # and cannot be compared between runs.
+  #
+  # Normalising each target patch to zero mean and unit variance makes the loss
+  # invariant to the frontend's scale, so what it measures is the SHAPE the
+  # model predicted. Masked autoencoding normalises pixels for the same reason.
+  # Only the spectrogram target needs it: the raw target is the preprocessed
+  # signal, which never passes through the frontend and cannot drift.
+  #
+  # false reproduces the runs before 2026-08-28 and is kept for that comparison
+  # alone; it is not a training option.
+  normalize_spec_target: true
+
+model:
+  max_level: 3
+  wave_kernel_size: 16
+  wavelet_names: [sym4, sym5, db6, sym8, db8]
+  wave_init_mode: pad
+  use_separate_channel: true
+  scale_fold: dynamic
+  fold_synthesis: 3
+  fold_gamma: 0.1
+  # 512/8/8, not the 384/6/6 that produced the Sleep-EDF numbers. head_dim is
+  # 512/8 = 64 either way, so nothing about the attention geometry changes;
+  # what changes is that the shared transformer goes from 10.6 M parameters to
+  # 25.2 M and the whole model from 15.1 M to 30.3 M.
+  #
+  # TWO CONSEQUENCES THAT ARE NOT OPTIONAL:
+  #   * every checkpoint from before this is dead. Not resumable, not
+  #     init-from-able -- the state dict shapes differ. This series starts from
+  #     random initialisation.
+  #   * configs/finetune/eeg_c1_{sleep,p300}.yaml carry the same three numbers
+  #     and were changed with it. An exported encoder does not load into a
+  #     downstream model of a different width, and the failure is a shape error
+  #     at load time rather than a wrong number at the end.
+  #
+  # Activation memory grows with both: E128_512 is 1024 tokens a window, and at
+  # 8 layers of 512 it is roughly 1.8x what 6 layers of 384 cost. If it runs
+  # out of memory, BATCH_SIZE_BY_ROUTE halves E128_512 at submission without
+  # editing this file.
+  embed_dim: 512
+  depth: 8
+  num_heads: 8
+  mlp_ratio: 4.0
+  # NO DROPOUT. Masked reconstruction already corrupts its input -- three
+  # quarters of the patches are zeroed before the frontend sees them -- and a
+  # second, uncontrolled corruption on top of it adds noise to a regression
+  # target rather than regularising a classifier. Masked autoencoding uses
+  # none for the same reason. This number also reaches the wavelet frontend's
+  # cross-scale FFN, which ignored it until 2026-08-29 and dropped 10%
+  # regardless of what was written here.
+  dropout: 0.0
+  norm: rmsnorm
+  ffn: swiglu
+  qk_norm: true
+  masking_strategy: frequency_guided
+  importance_ratio: 0.6
+  # 0.70. A patch is one channel over half a second, and EEG is strongly
+  # correlated across channels at the same instant, so at 0.5 a masked patch
+  # usually has an unmasked neighbour on an adjacent electrode carrying most
+  # of its content; the ratio has to be high enough that reconstruction is
+  # inference rather than interpolation.
+  #
+  # WHAT IS NOT MEASURED: 0.70 against 0.75. The run at 0.5 and the runs at
+  # 0.75 differ in the target as well -- the 0.5 run predicted an
+  # unnormalised, drifting target -- so nothing here separates the ratio from
+  # that change. The argument for a high ratio is structural; the exact value
+  # is a judgement.
+  mask_ratio: 0.70
+  # C1, exactly as the channel ablation defines it.
+  channel_encoding: id
+  channel_injection: token
+  channel_embed_dim: 64
+  channel_token_gate_init: 0.0
+
+train:
+  # 60 x 768 = 46,080 optimizer updates. Ten epochs was the first attempt and
+  # was an order of magnitude short: 7,680 updates, 8 M windows against a
+  # 15.4 M corpus, TUEG seen 0.3 times over the WHOLE run. A 30 M model from
+  # random initialisation does not converge on that, and the number that says
+  # so is the update count, not the epoch count.
+  #
+  # 60 buys 45 M windows -- 2.9x the corpus, TUEG 2.0x, HBN 6.3x -- for ~128 h
+  # of training, about six 24 h jobs with RESUME=auto. Raising it further is
+  # linear and safe (100 -> 4.9x the corpus, ten jobs); the table is in the
+  # report, and EPOCHS= overrides this without editing the file.
+  #
+  # AN EPOCH IS THE UNIT THE COSINE COUNTS IN, so this number has to be decided
+  # BEFORE the first submission and left alone. Raising it on a later resume
+  # reshapes the anneal from that point on -- the trainer prints a note when it
+  # sees that happen, but the curve is still two schedules stitched together.
+  epochs: 60
+  # 2 of 60 = 1,536 of 46,080 updates, 3.3% -- squarely in the usual 5-10%
+  # band's lower half, which is where it should be for a warmup measured in
+  # steps. At the earlier 10-epoch budget the same 2 was 20% of the run; the
+  # fraction moved because the run got longer, not because the ramp did. The
+  # ramp is a number of STEPS and does not scale with EPOCHS, so raising the
+  # epoch count further only makes this fraction smaller.
+  warmup_epochs: 2
+  # UNCHANGED, deliberately, across a doubled model and an eight-fold longer
+  # run. 3e-4 is the linear-scaling value for this effective batch (MAE's
+  # blr 1.5e-4 x batch/256), and that scaling depends on the batch, not on the
+  # parameter count -- so widening the transformer is not a reason to move it.
+  # More steps is not one either: the cosine already stretches to fit. Lowering
+  # it for a bigger model is a hunch, and a hunch written into a config is
+  # indistinguishable from a measurement six months later. If it diverges, the
+  # gradient-norm columns in metrics_step.jsonl are the evidence to change it
+  # on, and LR=1e-4 at submission is the change.
+  lr: 3.0e-4
+  min_lr_ratio: 0.01
+  weight_decay: 0.05
+  # fold_kl lives in objective:, and used to live here as well. Two
+  # copies of one number is one copy that is wrong, and the resolver
+  # prefers objective: -- so the value here was read by nothing while
+  # looking exactly like the value in force.
+  clip_grad_norm: 1.0
+  precision: bf16
+  # 1, so a scheduled step IS an optimizer step and the banner's two step
+  # counts agree. The arithmetic that settled this was done under the old
+  # `balanced` 384-step epoch, where grad_accum 4 left the run at 9,600
+  # optimizer steps -- an order of magnitude short of what masked pretraining
+  # takes, and no learning rate fixes a step count. Under `proportional` the
+  # epoch is the corpus and the step count is no longer the scarce thing, but
+  # 1 is still right: accumulation buys a bigger effective batch at the price
+  # of updates, and updates are what this objective needs.
+  grad_accumulation_steps: 1
+  # EXPLICIT, not derived, and bounded from BOTH sides.
+  #
+  # THE FLOOR is what a mixture policy derives: 386 steps under `balanced`, set
+  # by physionet_mi -- "one pass in expectation" means the pass of whichever
+  # dataset runs out first. That is a floor the smallest corpus imposes, not a
+  # budget. 768 is twice it.
+  #
+  # THE CEILING IS THE WALLTIME, for a reason that is not obvious: latest.pth
+  # is written at EPOCH BOUNDARIES ONLY, with start_step reset to 0 before it
+  # is saved. A job killed mid-epoch resumes from the START of that epoch, so
+  # an epoch that does not fit one allocation never completes and the run makes
+  # no progress however often it is resubmitted.
+  #
+  # 768 sits far inside that: ~2.1 h per epoch at the measured ~10 s/step, so a
+  # kill costs at most two hours and ten epochs is ~21 h of training. 6144 was
+  # tried and rejected -- it fits a 24 h job with only 5 h to spare and puts
+  # seventeen hours at risk on every kill, which is the wrong trade for a
+  # cluster that hands out preemptible time.
+  #
+  # THE STEP COUNT IS NOT THE LEVER FOR "sees too little data". At 768 x 10 the
+  # model sees 7.5 M windows against a 15.4 M corpus; raising steps under
+  # `balanced` spends most of the increase re-reading the three smallest
+  # corpora. The two levers that are not this one:
+  #   * the policy -- see data.weights, which is why it is temperature:0.5
+  #   * EPOCHS, which at 2.1 h each is cheap: EPOCHS=20 is ~42 h, two jobs
+  #     with RESUME=auto, and doubles the data seen at no risk per kill.
+  steps_per_epoch: 768
+  val_mask_seed: 1234            # fixes the validation mask across epochs
+  # HOW MUCH OF THE VALIDATION SET EACH EPOCH SWEEPS, per dataset.
+  #
+  # null is every window, which is what it has always done and is correct for a
+  # final number. It is also the second thing that does not fit a walltime: the
+  # sweep is proportional to corpus size, so it is mostly TUEG, and ten of them
+  # is hours of GPU time spent on a curve rather than on the model.
+  #
+  # A cap makes the per-epoch curve cheap and comparable -- the mask seed is
+  # fixed by window identity, so capping takes the SAME windows every epoch
+  # rather than a fresh sample. 100 batches is 100 x 2048 windows of TUEG and
+  # 100 x 384 of HBN per epoch at world 16, far more than a batch mean needs to
+  # be stable, and it keeps ten validations from eating the hours that 21 h of
+  # training leaves in a 24 h job.
+  #
+  # THE NUMBER IN metrics_epoch.jsonl IS THEN A CURVE, NOT A FINAL RESULT, and
+  # the startup banner says so. For a number to quote, re-run validation once
+  # against the finished checkpoint with this set back to null.
+  val_max_batches_per_dataset: 100
+  # Token counts differ 6.7x across routes, so one batch size would either
+  # waste E19_256 or exhaust memory on E128_512. A step's effective batch
+  # therefore depends on the route it drew; the mixture table logs the window
+  # share each dataset actually got, which is the number that matters.
+  # Doubled. An epoch therefore reads twice the windows and takes roughly
+  # twice as long; with RESUME=auto that is a walltime to resubmit against,
+  # not a limit. If E128_512 runs out of memory it is the one to halve first --
+  # 1024 tokens a window against E19_256's 152 -- and BATCH_SIZE_BY_ROUTE
+  # overrides any of these at submission without editing this file.
+  batch_size_by_route:
+    E19_256: 128
+    E32_512: 96
+    E64_256: 48
+    E128_512: 24

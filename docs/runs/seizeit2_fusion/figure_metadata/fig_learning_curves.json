@@ -1,0 +1,23 @@
+{
+  "checkpoint": "$PW_FAST_ROOT/runs/fusion/ralf_frozen_szo/best.pth",
+  "epoch": 5,
+  "run": "ralf_frozen_szo",
+  "git_commit": "dee0de2e333e08cd85e2068e234f7aaf6489b058",
+  "figure": "fig_learning_curves",
+  "generated_utc": "2026-10-16T08:12:05.871417+00:00",
+  "figure_text": [
+    "Learning curves; the dot is the epoch the test figures come from",
+    "Learning curves; the dot is the epoch the test figures come from"
+  ],
+  "paper_mode": true,
+  "runs": [
+    "ralf_frozen_szo",
+    "concat_frozen_szo",
+    "weighted_logit_frozen_szo",
+    "ralf_finetune_szo",
+    "ralf_scratch_szo",
+    "eeg_c1_finetune_sze",
+    "eeg_eegpt_frozen_sze",
+    "eeg_labram_finetune_sze"
+  ]
+}

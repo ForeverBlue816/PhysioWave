@@ -1,0 +1,25 @@
+{
+  "checkpoint": "$PW_FAST_ROOT/runs/fusion/ralf_frozen_szo/best.pth",
+  "epoch": 5,
+  "run": "ralf_frozen_szo",
+  "git_commit": "dee0de2e333e08cd85e2068e234f7aaf6489b058",
+  "figure": "fig_signal_ecg",
+  "generated_utc": "2026-10-16T08:12:00.168591+00:00",
+  "figure_text": [],
+  "paper_mode": true,
+  "recording": "sub-102_run-01",
+  "modality": "ecg",
+  "labels": [
+    "ECG"
+  ],
+  "unit": "\u00b5V",
+  "fs": 256.0,
+  "span_s": [
+    -60.0,
+    109.0
+  ],
+  "scale_bar": {
+    "s": 20.0,
+    "amplitude": 100.0
+  }
+}

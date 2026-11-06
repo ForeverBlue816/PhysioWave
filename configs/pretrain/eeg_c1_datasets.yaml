@@ -1,0 +1,143 @@
+# Per-corpus acquisition facts for the C1 multi-route pretraining pipeline.
+#
+# This file exists because the mains frequency is a property of the ROOM the
+# data was recorded in, not of the pipeline, and getting it wrong is silent: a
+# 50 Hz notch on 60 Hz data leaves the interference in and removes real signal
+# at 50 Hz. Hard-coding it in the shell scripts put the same fact in six places.
+#
+# `powerline_hz` tells the preprocessor WHERE TO LOOK. It does not by itself
+# authorise a notch -- see `notch_already_applied`. `verify_powerline_by_psd`
+# makes `--inspect` measure the 49-51 and 59-61 Hz bands against their
+# neighbours and report which one actually carries a peak, because two of these
+# corpora publish no trustworthy PowerLineFrequency field.
+
+faced:
+  route: E32_512
+  powerline_hz: 50
+  verify_powerline_by_psd: true
+  # 92 subjects at 1000 Hz, 31 at 250 Hz, in the SAME release. The 250 Hz
+  # subjects reach 512 Hz only by upsampling; every shard written from one
+  # carries upsampled_from_hz in its provenance so they can be excluded later
+  # without reprocessing.
+  expected_sampling_rates: [1000.0, 250.0]
+  native_upsample_ok: [250.0]
+  notes: >-
+    BIDS metadata publishes PowerLineFrequency as n/a; 50 Hz is inferred from
+    the acquisition site and must be confirmed by PSD before a full run.
+
+tdbrain:
+  route: E32_512
+  powerline_hz: 50
+  verify_powerline_by_psd: true
+  expected_sampling_rates: [500.0]
+  # V3.1 is BDF/BDF+ throughout -- the BrainVision and .csv releases are
+  # withdrawn -- which brings the download to ~15 GB and ~20 GB unpacked, not
+  # the 100+ GB the older formats needed.
+  format: bdf
+  # EVERY V3 file carries a BioSemi Status channel as its LAST channel, and in
+  # the resting EO/EC files it is all zeros. It is dropped because "Status" is
+  # not an electrode name and matches no slot, which is the right outcome and
+  # is why the slot list is matched BY NAME: a positional rule would have
+  # placed an all-zero channel into a real electrode's slot and marked it valid.
+  known_non_eeg: [Status]
+  notes: >-
+    26 recorded electrodes into 32 canonical slots; the 6 unrecorded slots stay
+    zero with valid_channel_mask False. Analogue low-pass near 100 Hz at
+    acquisition, so nothing above that is real regardless of the 512 Hz target.
+    V3.1 also adds beta Oddball ERP files in BDF+ alongside the resting
+    recordings; both are unlabelled signal as far as pretraining is concerned.
+    Distributed as a PASSWORD-PROTECTED zip; the password arrives in the Data
+    Use Agreement email.
+
+physionet_mi:
+  route: E64_256
+  powerline_hz: 60
+  verify_powerline_by_psd: true
+  expected_sampling_rates: [160.0]
+  native_upsample_ok: [160.0]
+  notes: >-
+    Source Nyquist is 80 Hz, so only the 60 Hz fundamental exists to remove --
+    the notch runs at the native rate before resampling, so the 120 Hz harmonic
+    is skipped automatically rather than applied to interpolated spectrum.
+
+m3cv:
+  route: E64_256
+  powerline_hz: 50
+  notch_already_applied: true
+  verify_powerline_by_psd: false
+  expected_sampling_rates: [250.0]
+  native_upsample_ok: [250.0]
+  # BrainVision: a .vhdr header pointing at a .eeg and a .vmrk, 2,469 of each.
+  # Only the .vhdr is walked -- listing .eeg as well would read every recording
+  # twice.
+  format: brainvision
+  notes: >-
+    Published already cleaned: 0.01-200 Hz band-pass, 49-51 Hz notch, bad-channel
+    interpolation, linked-mastoid reference, ICA ocular removal, 1000 -> 250 Hz.
+    A second notch would be a second filter on an already-filtered band. This is
+    NOT raw 1000 Hz data and must not be described as such.
+
+hbn:
+  route: E128_512
+  powerline_hz: 60
+  verify_powerline_by_psd: true
+  expected_sampling_rates: [500.0]
+  notes: >-
+    EGI HydroCel 129 -> 128 by removing the named vertex reference, never by
+    position. Nine standard releases R1-R9, ~1.49 TB, which is everything
+    mirrored to the fcp-indi bucket -- the published table lists eleven but
+    R10 and R11 are not there. The 100 Hz mini release and cmi_bids_NC
+    ("Not for Commercial Use") are excluded from the main model.
+
+hgd:
+  route: E128_512
+  powerline_hz: 50
+  verify_powerline_by_psd: true
+  expected_sampling_rates: [500.0]
+  # MEASURED, not assumed: --inspect --verify-powerline over 40 recordings put
+  # the 49-51 Hz band at 1.00x its neighbours and 59-61 Hz at 0.99x. There is no
+  # line interference in this corpus -- consistent with a lab the authors built
+  # specifically to record high-frequency movement-related EEG.
+  #
+  # Notching anyway would not be harmless. The filter runs at the native 500 Hz
+  # with two harmonics, so it removes 50 Hz AND 100 Hz -- and 100 Hz is in the
+  # middle of the 70-140 Hz high-gamma band that is the entire reason this
+  # dataset exists. Taking a stopband out of the signal of interest to suppress
+  # interference that measurably is not there is a bad trade in one direction
+  # only.
+  skip_notch: true
+  skip_notch_reason: >-
+    no line peak at 50 or 60 Hz in 40 recordings (1.00x / 0.99x); the 100 Hz
+    harmonic would land inside the high-gamma band of interest
+  # Cz is the recording reference and the authors note residual signal remains
+  # on it, so it is a real but attenuated channel rather than a dead one. It
+  # occupies slot 15 and will read low-variance in the QC block; that is the
+  # montage, not a bad electrode.
+  reference: Cz
+  notes: >-
+    128 electrodes on a standard 10-05 montage at 500 Hz, referenced to Cz with
+    residual signal remaining on Cz. Fifty of the electrodes are 10-05 halfway
+    positions (FFC5h, CPP3h, TPP9h); the slot list is measured from the corpus
+    with --derive-slots, not transcribed. The montage uses 10-05 halfway positions
+    (FFC5h, CPP3h, TPP9h), which is why a slot list of 10-10 names catches only
+    58% of it. Subject 14 has roughly half its sensors degraded in the official
+    test split; per-recording slot coverage and the QC block record it. The task
+    is repeated EXECUTED movement, not pure imagery, whatever the BIDS task
+    label says.
+
+siena:
+  # Continued pretraining only (routes.CONTINUATION_DATASETS).
+  route: E19_256
+  powerline_hz: 50
+  verify_powerline_by_psd: true
+  expected_sampling_rates: [512.0]
+  notes: >-
+    Siena Scalp EEG Database, PhysioNet 1.0.0 (ODC-By): 14 adults with focal
+    epilepsy recorded at the University of Siena, Italy; 50 Hz mains.
+
+tueg:
+  route: E19_256
+  powerline_hz: 60
+  verify_powerline_by_psd: true
+  notes: >-
+    US clinical acquisition. Rate varies per recording; already processed.

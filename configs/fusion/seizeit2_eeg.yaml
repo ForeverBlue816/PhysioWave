@@ -1,0 +1,35 @@
+# SeizeIT2, behind-the-ear EEG alone: C1 against EEGPT and LaBraM under one
+# protocol (physiowave/fusion/baselines.py, docs/fusion.md).
+#
+#   python -m physiowave.fusion.train --config fusion/seizeit2_eeg --output-dir <dir> \
+#       --set data.tasks.seizeit2.dir=<prep dir> encoders.eeg=<checkpoint> \
+#             encoders.eeg_arch=c1|eegpt|labram|luna_large|luna_huge model.encoder_mode=frozen|finetune
+#
+# Same windows, split, head, schedule, selection and test for every encoder:
+# the official split's windows; one learned 1x1 channel adapter from the two
+# recorded channels onto the temporal chains (EEGPT's own recipe for
+# two-channel data) in front of every encoder; the concat head on the
+# encoder's 4 summary tokens; lr 1e-4 (3e-4 on the 272k-window training set
+# peaked during warmup and then fell apart); selection on validation AUPRC.
+# No corruption augmentation and no multimodal losses: one modality.
+defaults: [fusion/c1_ralf]
+run_name: seizeit2_eeg
+data:
+  tasks:
+    mpdb: {dir: null}
+  modalities: [eeg]
+encoders:
+  eeg_arch: c1                 # c1 | eegpt | labram | luna_base | luna_large | luna_huge
+  eeg_input_uv: 30.0           # the RMS a z-scored channel is rescaled to for EEGPT (mV) and LaBraM (0.1 mV)
+model:
+  fusion: concat               # one modality: pool -> MLP
+  eeg_adapter: [F7, T7, P7, F8, T8, P8]   # null: C1 on the raw channel names (new rows), no adapter
+train:
+  epochs: 15
+  lr: 1.0e-4
+  patience: 5
+  uni_weight: 0.0
+  reliability_weight: 0.0
+  consistency_weight: 0.0
+corruption:
+  enabled: false

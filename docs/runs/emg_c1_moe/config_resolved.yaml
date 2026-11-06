@@ -1,0 +1,63 @@
+data:
+  manifest_train: $SCRATCH/bio/emg/emg_c1_corpus/merged/manifest_train.jsonl
+  manifest_val: $SCRATCH/bio/emg/emg_c1_corpus/merged/manifest_val.jsonl
+  modality: emg
+  weights: temperature:0.5
+model:
+  channel_embed_dim: 64
+  channel_encoding: id
+  channel_injection: token
+  channel_token_gate_init: 0.0
+  depth: 6
+  dropout: 0.0
+  embed_dim: 384
+  ffn: swiglu
+  fold_gamma: 0.1
+  fold_synthesis: 3
+  importance_ratio: 0.6
+  mask_ratio: 0.7
+  masking_strategy: frequency_guided
+  max_level: 3
+  mlp_ratio: 4.0
+  norm: rmsnorm
+  num_heads: 6
+  qk_norm: true
+  scale_fold: dynamic
+  use_separate_channel: true
+  wave_init_mode: pad
+  wave_kernel_size: 16
+  wavelet_names:
+  - db2
+  - db4
+  - db7
+  - sym4
+  - sym5
+objective:
+  fold_kl: 0.001
+  mask_before_frontend: true
+  normalize_spec_target: true
+  raw_beta: 0.5
+  raw_weight: 0.5
+  spec_weight: 0.5
+output_dir: ${run_name}
+run_name: pretrain_emg_c1_moe
+seed: 42
+train:
+  batch_size_by_route:
+    A24_2000: 128
+    G64_2000: 48
+    W16_2000: 192
+  clip_grad_norm: 1.0
+  epochs: 60
+  grad_accumulation_steps: 1
+  lr: 0.0003
+  max_skipped_steps_per_epoch: 50
+  min_lr_ratio: 0.01
+  precision: bf16
+  skip_step_grad_norm_above: 100.0
+  steps_per_epoch: 1000
+  val_mask_seed: 1234
+  val_max_batches_per_dataset: 50
+  warmup_epochs: 2
+  weight_decay: 0.05
+trainer: emg_c1_moe

@@ -1,0 +1,346 @@
+{
+  "checkpoint": "$PW_FAST_ROOT/runs/eeg_downstream/sleep_edf_ft_lr1e-4/best.pth",
+  "checkpoint_sha256": "259610a1554e1b6da24be21244bca91faf0774fe9f859021d46c7ebde6f7744b",
+  "epoch": 6,
+  "data": "$SCRATCH/bio/eeg/sleep_edf/test.h5",
+  "split": "test",
+  "plotting_script_git_commit": "a2e6a869da9c90a50f9c34b4d7864259d8f41ad8",
+  "figure": "fig_paper_fold_by_stage",
+  "generated_utc": "2026-10-26T16:17:34.655560+00:00",
+  "figure_text": [
+    "a",
+    "b",
+    "c"
+  ],
+  "paper_mode": true,
+  "stats": {
+    "n_windows": 37902,
+    "n_subjects": 14,
+    "per_stage": {
+      "W": {
+        "Fpz-Cz": {
+          "d1": {
+            "mean_over_subjects": 0.27753448699201855,
+            "ci95_half": 0.0005373335899895468,
+            "n_subjects": 14
+          },
+          "d2": {
+            "mean_over_subjects": 0.25434836745262146,
+            "ci95_half": 0.0006293379721541199,
+            "n_subjects": 14
+          },
+          "d3": {
+            "mean_over_subjects": 0.22501461527177266,
+            "ci95_half": 0.0007976726413188602,
+            "n_subjects": 14
+          },
+          "a3": {
+            "mean_over_subjects": 0.24310258563075746,
+            "ci95_half": 0.0018887832213472992,
+            "n_subjects": 14
+          }
+        },
+        "Pz-Oz": {
+          "d1": {
+            "mean_over_subjects": 0.2764437368937901,
+            "ci95_half": 0.00043945580569155915,
+            "n_subjects": 14
+          },
+          "d2": {
+            "mean_over_subjects": 0.2529149800539017,
+            "ci95_half": 0.0004412187707603838,
+            "n_subjects": 14
+          },
+          "d3": {
+            "mean_over_subjects": 0.22332772186824254,
+            "ci95_half": 0.0004999587608918709,
+            "n_subjects": 14
+          },
+          "a3": {
+            "mean_over_subjects": 0.24731361546686717,
+            "ci95_half": 0.0012992408259019721,
+            "n_subjects": 14
+          }
+        }
+      },
+      "N1": {
+        "Fpz-Cz": {
+          "d1": {
+            "mean_over_subjects": 0.27744691499641966,
+            "ci95_half": 0.0004399494893757659,
+            "n_subjects": 14
+          },
+          "d2": {
+            "mean_over_subjects": 0.25438936267580303,
+            "ci95_half": 0.000527144058408302,
+            "n_subjects": 14
+          },
+          "d3": {
+            "mean_over_subjects": 0.22518464922904968,
+            "ci95_half": 0.000664354405667392,
+            "n_subjects": 14
+          },
+          "a3": {
+            "mean_over_subjects": 0.24297913483210973,
+            "ci95_half": 0.0015585966379728531,
+            "n_subjects": 14
+          }
+        },
+        "Pz-Oz": {
+          "d1": {
+            "mean_over_subjects": 0.2753280039344515,
+            "ci95_half": 0.00027591757383012717,
+            "n_subjects": 14
+          },
+          "d2": {
+            "mean_over_subjects": 0.2520204016140529,
+            "ci95_half": 0.0002721515185052725,
+            "n_subjects": 14
+          },
+          "d3": {
+            "mean_over_subjects": 0.22276755209480012,
+            "ci95_half": 0.0002656977671001659,
+            "n_subjects": 14
+          },
+          "a3": {
+            "mean_over_subjects": 0.24988410302570888,
+            "ci95_half": 0.0007959916302275441,
+            "n_subjects": 14
+          }
+        }
+      },
+      "N2": {
+        "Fpz-Cz": {
+          "d1": {
+            "mean_over_subjects": 0.2764027203832354,
+            "ci95_half": 0.00039310983577281965,
+            "n_subjects": 14
+          },
+          "d2": {
+            "mean_over_subjects": 0.25371683495385305,
+            "ci95_half": 0.0004003137185453727,
+            "n_subjects": 14
+          },
+          "d3": {
+            "mean_over_subjects": 0.2250200009771756,
+            "ci95_half": 0.00043124061932265284,
+            "n_subjects": 14
+          },
+          "a3": {
+            "mean_over_subjects": 0.24486050329038075,
+            "ci95_half": 0.0011871033280903666,
+            "n_subjects": 14
+          }
+        },
+        "Pz-Oz": {
+          "d1": {
+            "mean_over_subjects": 0.27403068968227934,
+            "ci95_half": 0.0002625276969119701,
+            "n_subjects": 14
+          },
+          "d2": {
+            "mean_over_subjects": 0.250719604747636,
+            "ci95_half": 0.00028650649756142,
+            "n_subjects": 14
+          },
+          "d3": {
+            "mean_over_subjects": 0.22152929114443914,
+            "ci95_half": 0.0003065048705162912,
+            "n_subjects": 14
+          },
+          "a3": {
+            "mean_over_subjects": 0.2537204772233963,
+            "ci95_half": 0.0008453702707440086,
+            "n_subjects": 14
+          }
+        }
+      },
+      "N3": {
+        "Fpz-Cz": {
+          "d1": {
+            "mean_over_subjects": 0.27572011718383205,
+            "ci95_half": 0.00048675915888106436,
+            "n_subjects": 13
+          },
+          "d2": {
+            "mean_over_subjects": 0.25329137306946975,
+            "ci95_half": 0.0005592835498456039,
+            "n_subjects": 13
+          },
+          "d3": {
+            "mean_over_subjects": 0.2249216609276258,
+            "ci95_half": 0.000626462245206359,
+            "n_subjects": 13
+          },
+          "a3": {
+            "mean_over_subjects": 0.24606689696128553,
+            "ci95_half": 0.0016592365265033916,
+            "n_subjects": 13
+          }
+        },
+        "Pz-Oz": {
+          "d1": {
+            "mean_over_subjects": 0.2726861880375789,
+            "ci95_half": 0.0003740569931997517,
+            "n_subjects": 13
+          },
+          "d2": {
+            "mean_over_subjects": 0.2494897899719385,
+            "ci95_half": 0.0004177548081069086,
+            "n_subjects": 13
+          },
+          "d3": {
+            "mean_over_subjects": 0.22044600202487066,
+            "ci95_half": 0.0004612249272338796,
+            "n_subjects": 13
+          },
+          "a3": {
+            "mean_over_subjects": 0.25737807613152724,
+            "ci95_half": 0.001243038950703693,
+            "n_subjects": 13
+          }
+        }
+      },
+      "REM": {
+        "Fpz-Cz": {
+          "d1": {
+            "mean_over_subjects": 0.27720101390566143,
+            "ci95_half": 0.0004830369740001594,
+            "n_subjects": 14
+          },
+          "d2": {
+            "mean_over_subjects": 0.25441146535532816,
+            "ci95_half": 0.0006411325135070282,
+            "n_subjects": 14
+          },
+          "d3": {
+            "mean_over_subjects": 0.2255415841937065,
+            "ci95_half": 0.0009319994156309412,
+            "n_subjects": 14
+          },
+          "a3": {
+            "mean_over_subjects": 0.24284598337752478,
+            "ci95_half": 0.0019261360411797024,
+            "n_subjects": 14
+          }
+        },
+        "Pz-Oz": {
+          "d1": {
+            "mean_over_subjects": 0.2752166560717991,
+            "ci95_half": 0.0004793701741300412,
+            "n_subjects": 14
+          },
+          "d2": {
+            "mean_over_subjects": 0.2518295645713806,
+            "ci95_half": 0.0004813026444796084,
+            "n_subjects": 14
+          },
+          "d3": {
+            "mean_over_subjects": 0.22250984076942718,
+            "ci95_half": 0.0004667856492093907,
+            "n_subjects": 14
+          },
+          "a3": {
+            "mean_over_subjects": 0.25044399819203783,
+            "ci95_half": 0.001411787132802666,
+            "n_subjects": 14
+          }
+        }
+      }
+    },
+    "paired_vs_wake": {
+      "Fpz-Cz": {
+        "scale": "a3",
+        "n3_minus_w_mean": 0.003128349781036377,
+        "ci95_half": 0.0030142061545226453,
+        "n_subjects": 13,
+        "n_positive": 10,
+        "wilcoxon_p": 0.0478515625,
+        "per_stage_mean": {
+          "W": 0.0,
+          "N1": -0.0001234507986477443,
+          "N2": 0.0017579176596232823,
+          "N3": 0.003128349781036377,
+          "REM": -0.00025660225323268345
+        }
+      },
+      "Pz-Oz": {
+        "scale": "a3",
+        "n3_minus_w_mean": 0.010064050555229187,
+        "ci95_half": 0.0021041881344236544,
+        "n_subjects": 13,
+        "n_positive": 13,
+        "wilcoxon_p": 0.000244140625,
+        "per_stage_mean": {
+          "W": 0.0,
+          "N1": 0.0025704875588417053,
+          "N2": 0.0064068617565291265,
+          "N3": 0.010064050555229187,
+          "REM": 0.0031303827251706806
+        }
+      }
+    },
+    "delta_vs_alpha_approx": {
+      "Fpz-Cz": {
+        "spearman_rho": -0.22285494138778267,
+        "n": 37902
+      },
+      "Pz-Oz": {
+        "spearman_rho": 0.21190095748564267,
+        "n": 37902
+      }
+    },
+    "delta_vs_alpha_approx_within_stage": {
+      "Fpz-Cz": {
+        "W": -0.35507962700081525,
+        "N1": -0.31071057721013345,
+        "N2": -0.15639299000886167,
+        "N3": 0.17158291874964834,
+        "REM": -0.4070164577478137
+      },
+      "Pz-Oz": {
+        "W": -0.4381412271221111,
+        "N1": -0.12629079592368714,
+        "N2": 0.1420911593580159,
+        "N3": 0.2274139380785864,
+        "REM": -0.030697549649603115
+      }
+    },
+    "bands": [
+      {
+        "scale": "d1",
+        "lo_hz": 25.0,
+        "hi_hz": 50.0
+      },
+      {
+        "scale": "d2",
+        "lo_hz": 12.5,
+        "hi_hz": 25.0
+      },
+      {
+        "scale": "d3",
+        "lo_hz": 6.25,
+        "hi_hz": 12.5
+      },
+      {
+        "scale": "a3",
+        "lo_hz": 0.0,
+        "hi_hz": 6.25
+      }
+    ]
+  },
+  "model": "eeg_c1 downstream, sleep_edf_ft_lr1e-4, epoch 6",
+  "stages": [
+    "W",
+    "N1",
+    "N2",
+    "N3",
+    "REM"
+  ],
+  "uncertainty": "mean over test subjects of each subject's mean window alpha; 95% t-interval across subjects",
+  "paired": "panel (b): per subject, the approximation scale's mean alpha in each stage minus that subject's own W mean; Wilcoxon signed-rank on N3 - W across subjects",
+  "alpha": "fold.alpha_blocks: the undropped softmax over scales, per channel and 0.5 s block, averaged over the 60 blocks of a 30 s window; eval mode. A mixing weight, not a share of energy: a scale with little power can carry a large weight",
+  "bands": "nominal dyadic bands at the data's sampling rate; the learned filters are not brick-wall",
+  "delta_share": "power in 0.5-4 Hz over power in 0.5-30 Hz, per window, from a plain periodogram of the z-scored EEG",
+  "frontend": "trained from scratch on Sleep-EDF during fine-tuning (the montage is on no pretraining route), so these weights were learned for sleep staging"
+}

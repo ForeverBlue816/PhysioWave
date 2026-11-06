@@ -1,0 +1,35 @@
+# Continued pretraining of the EEG C1 encoder: Siena Scalp EEG (14 adults with
+# focal epilepsy) mixed with the seven original corpora, from the original run's
+# last checkpoint. Same model and objective; only the corpus mixture and the
+# schedule change.
+#
+#   sbatch --nodes=1 --time=24:00:00 --export=ALL,CONFIG=pretrain/eeg_c1_siena,\
+#   INIT_FROM=$PW_CKPT_ROOT/pretrain_eeg_c1_moe/latest.pth,\
+#   MANIFEST_TRAIN=$PW_DATA_EEG/eeg_c1_corpus/merged_siena/manifest_train.jsonl,\
+#   MANIFEST_VAL=$PW_DATA_EEG/eeg_c1_corpus/merged_siena/manifest_val.jsonl,\
+#   OUTPUT_DIR=$PW_CKPT_ROOT/pretrain_eeg_c1_siena \
+#     scripts/slurm/cineca_eeg_c1_moe_pretrain.sbatch
+#
+# Mixture: Siena takes a fixed 0.3 of the steps; the other 0.7 are shared among
+# the seven original corpora by the original temperature:0.5 policy, so the run
+# keeps rehearsing what the encoder learned while it adapts to seizure-rich
+# clinical EEG. An epoch is one read of Siena at that share
+# (train.epoch_pass_of), so the two epochs read Siena about twice; on 16 GPUs
+# instead of 4 the epoch is a quarter as many steps and the reads are the same.
+#
+# Schedule: the original run ended at 1 % of 3e-4; this one restarts at 1e-4
+# (a third of the original peak, so it adapts without overwriting), warms up
+# over a tenth of an epoch from a fresh optimizer, and decays to 1e-5.
+defaults: [pretrain/eeg_c1_moe]
+run_name: pretrain_eeg_c1_siena
+data:
+  continuation_datasets: [siena]
+  weights: temperature:0.5
+  weights_fixed: {siena: 0.3}
+train:
+  epochs: 2
+  steps_per_epoch: null
+  epoch_pass_of: siena
+  warmup_epochs: 0.1
+  lr: 1.0e-4
+  min_lr_ratio: 0.1

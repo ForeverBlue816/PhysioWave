@@ -1,0 +1,35 @@
+{
+  "checkpoint": "$PW_FAST_ROOT/runs/pretrain_ecg_c1_moe/best.pth",
+  "checkpoint_sha256": "4f740ab80f970ff31ee2e30bc4a6a185258b14938f22ea8b678652fdfe1703e0",
+  "epoch": 33,
+  "global_step": 33000,
+  "channel_vocab_sha256": "3448b5a10f662855971595abd569493e46fb1d821a51a3f1d676944d14b87a28",
+  "modality": "ecg",
+  "plotting_script_git_commit": "22df8ba3e2384c532b4e953f708a8834f3f27e40",
+  "split": "val",
+  "mask_seed": 1234,
+  "manifest": "$SCRATCH/bio/ecg/ecg_c1_corpus/merged/manifest_val.jsonl",
+  "objective": {
+    "spec_weight": 0.5,
+    "raw_weight": 0.5,
+    "raw_beta": 0.5,
+    "fold_kl": 0.001,
+    "mask_before_frontend": true,
+    "normalize_spec_target": true
+  },
+  "objective_equation": "0.5*L_spec + 0.5*L_raw + 0.001*L_foldKL",
+  "metrics_last_epoch": 56,
+  "figure": "10_dual_objective",
+  "generated_utc": "2026-10-07T05:21:35.964338+00:00",
+  "figure_text": [
+    "The two reconstruction targets:  spec x0.5   raw x0.5   fold KL x0.001",
+    "The two reconstruction targets:  spec x0.5   raw x0.5   fold KL x0.001"
+  ],
+  "paper_mode": true,
+  "weights": {
+    "spec": 0.5,
+    "raw": 0.5,
+    "fold_kl": 0.001
+  },
+  "note": "panels 1-2 are unweighted losses on their own scales and are NOT comparable to each other; panel 3 is what enters the total"
+}

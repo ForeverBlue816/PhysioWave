@@ -1,0 +1,45 @@
+# Tooling configuration for the TPAMI extension.
+# The repository had no formatter or test configuration; these settings are
+# deliberately light and apply only to the new package, the tests and the
+# configs. The original top-level modules are excluded so that nothing
+# reformats code that was not touched.
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q --strict-markers"
+markers = [
+    # Tests that train a model and render figures in a subprocess. They belong
+    # in the default run -- an untested figure pipeline is how a paper figure
+    # turns out to be empty -- but are marked so `-m 'not slow'` stays useful
+    # while iterating.
+    "slow: takes tens of seconds; trains a smoke model or renders figures",
+]
+filterwarnings = [
+    "ignore:'pin_memory' argument is set as true:UserWarning",
+    "ignore:An output with one or more elements was resized:UserWarning",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+include = ["physiowave/**/*.py", "tests/**/*.py"]
+exclude = [
+    "model.py", "wavelet_modules.py", "transformer_modules.py",
+    "head_modules.py", "dataset.py", "dataset_multilabel.py",
+    "pretrain.py", "finetune.py", "finetune_multilabel.py", "ECG", "EMG",
+]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B"]
+ignore = [
+    "E501",    # long lines are handled by the formatter, not the linter
+    "B008",    # dataclass field(default_factory=...) is the intended pattern
+    # typing.List / Optional / Dict kept explicit: the codebase targets py3.9+
+    # and the annotations double as documentation in the public signatures.
+    "UP006", "UP007", "UP035", "UP045",
+]
+
+[tool.black]
+line-length = 100
+target-version = ["py310"]
+include = '^/(physiowave|tests)/.*\.py$'

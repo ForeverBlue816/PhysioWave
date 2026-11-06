@@ -1,0 +1,75 @@
+defaults: [base, model/wast]
+run_name: pretrain_semg_lattice
+# LIMB / skeletal sEMG only; see configs/pretrain/semg.yaml for why.
+#
+# The channel-time lattice is preserved end to end. What gets removed is the
+# per-scale token expansion the original PhysioWave introduced -- (J+1) copies
+# of every channel-patch, one per decomposition level -- and nothing else:
+#
+#   legacy               (J+1) * C * S
+#   this config                  C * S      <- same count the patcher produced
+#   semg.yaml (K queries)        K * S      with K < C
+#
+# The middle row is the claim worth defending. A reviewer can ask what the model
+# gave up to reach K*S and the answer is "channel evidence"; here the answer is
+# "the duplicated scale axis", which the wavelet packs into features instead.
+data:
+  modality: semg
+  emg_region: limb
+  synthetic:
+    sampling_rate: 1000.0
+    window_samples: 2048
+model:
+  name: wast
+  modality: semg
+  sampling_rate: 1000.0
+  # No TARE, no coordinates, no spatial graph, no channel compression. The
+  # backbone's slot axis *is* the channel axis, and its slot embedding is the
+  # per-channel identity -- which is all a fixed forearm array needs.
+  channel_embedding: none
+  use_spatial_frontend: false
+  use_compression: false
+  channel_reduction: none        # keep [B, C, S, D]; 'mean' would discard it
+  wast:
+    patch_size: 32               # 512-sample window -> S = 16 temporal positions.
+                                 # At patch 64 there are only 8, and six layers of
+                                 # temporal attention have very little to attend over.
+    level: 3
+    wavelet: bior4.4
+    tokenizer: fold              # subbands into the feature axis, no synthesis
+    fold_raw_residual: true      # start at a plain patch embedding, gate the
+    fold_gate_init: 0.1          # wavelet path in
+  # The legacy DB5 run that reaches 72% has 4.97 M parameters. A FactorizedBlock
+  # carries two attentions (temporal and slot) where a legacy block carries one,
+  # so matching that budget means depth 4, not 6: depth 4 / dim 256 is 4.88 M.
+  head_dropout: 0.3              # the legacy run's --head_dropout; this encoder
+                                 # had no equivalent and trained a bare Linear
+  backbone:
+    depth: 4
+    num_heads: 8
+    slot_heads: 4
+    dropout: 0.3                 # matches the DB5 setting that is working
+    kv_wavelet_level: 0          # 1 halves the temporal K/V; see the note in
+                                 # backbone.py before turning it on
+    # Load bearing here in a way it is not elsewhere: with channel_embedding
+    # 'none' the slot embedding is the ONLY thing that distinguishes one channel
+    # from another, and the usual 0.02 leaves it at 3% of the token magnitude --
+    # small enough that the model never finds it. On a synthetic task whose
+    # classes differ only in which channel carries which amplitude, 25 epochs:
+    #
+    #   0.02 -> acc 0.281, AUROC 0.523    (chance is 0.25)
+    #   0.05 -> acc 0.297, AUROC 0.534
+    #   0.10 -> acc 0.500, AUROC 0.725
+    #   0.30 -> acc 0.938, AUROC 0.998
+    #   0.50 -> acc 0.953, AUROC 0.999
+    #   1.00 -> acc 0.984, AUROC 1.000
+    #
+    # The measured token RMS is 0.62, so the plateau is where the identity
+    # vector is comparable to the content it labels. 0.5 sits inside it rather
+    # than at either end; it is not a tuned optimum.
+    pos_embed_init: 0.5
+pretrain:
+  use_reference_consistency: false
+  use_covariance: false
+  lambda_wave: 0.5
+  lambda_spec: 0.05

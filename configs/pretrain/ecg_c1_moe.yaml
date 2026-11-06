@@ -1,0 +1,135 @@
+# ECG C1 multi-route pretraining.
+#
+# The EEG C1 model and objective (configs/pretrain/eeg_c1_moe.yaml) on ECG:
+# per-route wavelet frontend + dynamic ScaleFold, per-rate patcher and two
+# decoders, one shared RoPE Transformer, C1 lead-name embedding at the token
+# site. Every number below that is not about ECG is the EEG config's, and the
+# reasons for them are written there; this file only argues the ones that
+# differ.
+#
+#   route     leads  rate   window  patch   tokens   corpora
+#   L12_500   12     500    10 s    0.5 s   240      MIMIC-IV-ECG, CODE-15%,
+#                                                    SPH, Georgia, MedalCare-XL
+#   L1_250     1     250    10 s    0.5 s    20      Icentia11k (chest patch),
+#                                                    PulseDB (lead II)
+#
+# The window is not a config key: it is what the shards were cut to, so it
+# lives in physiowave/ecg_c1/routes.py (WINDOW_SECONDS) beside the reason it
+# is 10 s -- and what that costs: ~58% of CODE-15%'s exams are 7.3 s and give
+# no 10 s window.
+#
+# Like the EEG config, deliberately not `defaults: [base, ...]`: nothing of
+# the WAST/TARE path applies here.
+trainer: ecg_c1_moe
+run_name: pretrain_ecg_c1_moe
+seed: 42
+output_dir: ${run_name}
+
+data:
+  modality: ecg
+  # Written by ECG/preprocess_ecg_corpus.py, one directory per dataset, and
+  # merged by scripts/build_eeg_c1_manifest.py --modality ecg.
+  manifest_train: null
+  manifest_val: null
+  # temperature:0.5 for the reason the EEG config gives, and the spread here
+  # is wide: Icentia11k (~8.7 M windows at 16 per segment) and PulseDB (~5.2 M)
+  # are single-lead and together ~90% of all windows, against ~1 M 12-lead
+  # windows from MIMIC-IV-ECG and far fewer from Georgia and MedalCare-XL.
+  # Under `proportional` the 12-lead route would get about a tenth of the
+  # windows and Georgia almost none; under `balanced` half of all steps would
+  # go to the single-lead route. At 0.5 a corpus 100x larger gets 10x the
+  # windows, which by these counts leaves ~3/4 of STEPS -- and ~4/5 of tokens
+  # -- on the 12-lead route. The banner prints the realised mixture and the
+  # passes/epoch per corpus; the small ones are re-read by design, and warned
+  # about.
+  weights: temperature:0.5
+
+objective:
+  # Unchanged from EEG: two reconstruction terms of equal standing, detached
+  # targets, the spectral target normalised per patch, masking in the signal
+  # before the frontend. The raw target is the preprocessed ECG -- per-window
+  # shared-scale normalised, so the leads keep their relative amplitudes --
+  # and SmoothL1's knee at 0.5 is in those units.
+  spec_weight: 0.5
+  raw_weight: 0.5
+  raw_beta: 0.5
+  fold_kl: 1.0e-3
+  mask_before_frontend: true
+  normalize_spec_target: true
+
+model:
+  max_level: 3
+  wave_kernel_size: 16
+  # THE ECG WAVELETS. db4 and sym4 are the classic QRS-matched families,
+  # db6 and sym8 the smoother ones used for P/T-wave and baseline
+  # decomposition, coif2 the near-symmetric coiflet used in ECG denoising.
+  # All are 8-16 taps, so the `pad` initialisation centres each one in the
+  # 16-tap kernel exactly and the bank starts as a perfect-reconstruction
+  # filter pair per family (see wavelet_modules.load_wavelet_kernel). coif3,
+  # the original PhysioWave default, is 18 taps and cannot be placed exactly.
+  #
+  # WHAT THIS DOES AND DOES NOT CONTROL. The selector's filter bank is shared
+  # by every level and applied at the full sampling rate, so the family sets
+  # each filter's initial SHAPE (its transition band, symmetry and phase), not
+  # a different octave per level. The filters are learnable, and the selector
+  # weights the five per window.
+  wavelet_names: [db4, db6, sym4, sym8, coif2]
+  wave_init_mode: pad
+  use_separate_channel: true
+  scale_fold: dynamic
+  fold_synthesis: 3
+  fold_gamma: 0.1
+  # ~30 M. 512 wide, 9 deep, 8 heads: 30.08 M in total, of which 28.64 M is
+  # the encoder that fine-tuning inherits (the two decoders and the mask token
+  # are pretraining-only). The EEG model is 512/8/8 at 30.30 M; it carries
+  # four wavelet frontends and two 128-channel ones among them, ECG's two
+  # frontends are 32 k parameters together, and the ninth layer is what
+  # brings the total to the same size. head_dim is 64 as on the EEG side.
+  embed_dim: 512
+  depth: 9
+  num_heads: 8
+  mlp_ratio: 4.0
+  dropout: 0.0
+  norm: rmsnorm
+  ffn: swiglu
+  qk_norm: true
+  masking_strategy: frequency_guided
+  importance_ratio: 0.6
+  mask_ratio: 0.70
+  # THE ONE CHANGE TO THE OBJECTIVE'S TASK, and it is forced by the leads,
+  # not tuned. I, II, III, aVR, aVL and aVF are six projections of one
+  # frontal-plane vector: any two determine the other four EXACTLY. Masked
+  # per token at 0.70, a limb-lead patch has two or more of its five siblings
+  # visible at the same instant ~47% of the time, and "reconstructing" it is
+  # arithmetic. With this on, a time patch of the six limb leads is masked as
+  # one unit; V1-V6 are masked per token as before; each part at mask_ratio,
+  # so the overall ratio is unchanged. false is the EEG behaviour exactly.
+  lead_group_masking: true
+  channel_encoding: id
+  channel_injection: token
+  channel_embed_dim: 64
+  channel_token_gate_init: 0.0
+
+train:
+  # A starting budget, not a measured one: the EEG run's settings until the
+  # first ECG epoch has been timed. Sizing it is the same arithmetic as on the
+  # EEG side -- the banner prints steps/epoch, total optimizer updates and
+  # passes per corpus; EPOCHS= and STEPS_PER_EPOCH= at submission change it.
+  epochs: 60
+  warmup_epochs: 2
+  lr: 3.0e-4
+  min_lr_ratio: 0.01
+  weight_decay: 0.05
+  clip_grad_norm: 1.0
+  precision: bf16
+  grad_accumulation_steps: 1
+  # Explicit, like EEG's, and for its reason: latest.pth is written at epoch
+  # boundaries only, so an epoch must fit comfortably inside one walltime.
+  steps_per_epoch: 1000
+  val_mask_seed: 1234
+  val_max_batches_per_dataset: 100
+  # Per rank. ~23 k tokens a step on L12_500 (96 x 240) and ~20 k on L1_250
+  # (1024 x 20). BATCH_SIZE_BY_ROUTE overrides at submission.
+  batch_size_by_route:
+    L12_500: 96
+    L1_250: 1024

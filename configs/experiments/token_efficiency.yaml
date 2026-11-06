@@ -1,0 +1,20 @@
+# Token-efficiency benchmark: parameters, FLOPs, peak memory, throughput and the
+# token count for the legacy path, IWT-only, WAST and WAST+TARE at several K.
+defaults: [pretrain/eeg]
+run_name: exp_token_efficiency
+experiment:
+  name: token_efficiency
+  tier: 2
+  seeds: [0]
+  benchmark:
+    channels: [19, 64]
+    window_samples: [1024, 2048]
+    batch_size: 4
+    variants:
+      - {id: legacy,        model: {name: legacy}}
+      - {id: iwt_only,      model: {name: wast, wast: {subband_width: 1, use_band_features: false}}}
+      - {id: wast,          model: {name: wast}}
+      - {id: wast_tare_K4,  model: {name: wast_tare, compression: {num_queries: 4}}}
+      - {id: wast_tare_K8,  model: {name: wast_tare, compression: {num_queries: 8}}}
+      - {id: wast_tare_K16, model: {name: wast_tare, compression: {num_queries: 16}}}
+      - {id: wast_tare_K32, model: {name: wast_tare, compression: {num_queries: 32}}}

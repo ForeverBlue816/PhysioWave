@@ -1,0 +1,45 @@
+# Root defaults shared by every run.
+seed: 42
+output_dir: ./outputs/${run_name}
+run_name: physiowave
+
+train:
+  epochs: 10
+  batch_size: 16
+  lr: 3.0e-4
+  weight_decay: 0.05
+  warmup_epochs: 1
+  grad_accumulation_steps: 1
+  grad_clip: 1.0
+  precision: bf16          # bf16 -> fp16 -> fp32 fallback is automatic
+  scheduler: cosine
+  min_lr_ratio: 0.01
+  log_every: 10
+  save_every_epochs: 1
+  num_workers: 4
+  deterministic: true
+  detect_anomalies: false
+  check_nan: true
+  tensorboard: true
+  wandb: false
+  wandb_project: physiowave
+
+data:
+  modality: eeg
+  datasets: []             # registry ids; empty => synthetic smoke corpus
+  weights: []              # multi-corpus mixture weights (defaults to uniform)
+  window_seconds: 4.0
+  manifest: null
+  split_ratios: [0.8, 0.1, 0.1]
+  synthetic:
+    num_samples: 128
+    num_subjects: 8
+    window_samples: 1024
+    sampling_rate: 256.0
+    montage_name: standard_1010_64
+  preprocess:
+    target_sampling_rate: null
+    notch_freq: null
+    bandpass: null
+    normalize: zscore
+    cache_dir: null

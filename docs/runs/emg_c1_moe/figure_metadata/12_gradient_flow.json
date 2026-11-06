@@ -1,0 +1,40 @@
+{
+  "checkpoint": "$PW_FAST_ROOT/runs/pretrain_emg_c1_moe/epoch38.pth",
+  "checkpoint_sha256": "fef902d266172fe1dc062ac5aff13db38f9628401d19e6f33e1f104743a52040",
+  "epoch": 39,
+  "global_step": 39000,
+  "channel_vocab_sha256": "5b4444a9bd5f7c5d48aa893e2ce0dd264fb9dce7bbea00a8401b9a641b57c356",
+  "modality": "emg",
+  "plotting_script_git_commit": "616e601a8ba44113d36e3f188bd639ed8a128b40",
+  "split": "val",
+  "mask_seed": 1234,
+  "manifest": "$SCRATCH/bio/emg/emg_c1_corpus/merged/manifest_val.jsonl",
+  "objective": {
+    "spec_weight": 0.5,
+    "raw_weight": 0.5,
+    "raw_beta": 0.5,
+    "fold_kl": 0.001,
+    "mask_before_frontend": true,
+    "normalize_spec_target": true
+  },
+  "objective_equation": "0.5*L_spec + 0.5*L_raw + 0.001*L_foldKL",
+  "metrics_last_epoch": 38,
+  "figure": "12_gradient_flow",
+  "generated_utc": "2026-10-13T06:58:49.039617+00:00",
+  "figure_text": [],
+  "paper_mode": true,
+  "branches": [
+    "gradnorm/channel_encoder",
+    "gradnorm/channel_to_token",
+    "gradnorm/channel_token_gate",
+    "gradnorm/mask_token",
+    "gradnorm/patch_embed_by_rate.2000",
+    "gradnorm/raw_reconstruction_heads.2000",
+    "gradnorm/reconstruction_heads.2000",
+    "gradnorm/shared_transformer",
+    "gradnorm/wavelet_frontends.A24_2000",
+    "gradnorm/wavelet_frontends.G64_2000",
+    "gradnorm/wavelet_frontends.W16_2000"
+  ],
+  "note": "the channel encoder is zero while tanh(gate) is zero -- that is the initialisation, not a fault"
+}

@@ -1,0 +1,55 @@
+# ECG C1 downstream: CPSC 2018, the 9 official classes, multi-label (the paper's 'F1-micro').
+# Records cut into 10 s windows (5 s stride); scored per record.
+#
+#   bash ECG/finetune_ecg_c1.sh  (TASK=cpsc2018 MODE=ft|probe|scratch)
+#
+# Data from ECG/ecg_downstream_prep.py --task cpsc2018 (9 classes). The model
+# block is the pretrained encoder's; MODE=scratch is the same model with no
+# weights loaded, the control every pretrained number is read against.
+trainer: finetune
+run_name: finetune_ecg_c1_cpsc2018
+data:
+  modality: ecg
+model:
+  name: ecg_c1
+  # Must equal configs/pretrain/ecg_c1_moe.yaml's model block, or the
+  # pretrained weights do not fit (load_pretrained refuses a shape mismatch).
+  embed_dim: 512
+  depth: 9
+  num_heads: 8
+  mlp_ratio: 4.0
+  norm: rmsnorm
+  ffn: swiglu
+  qk_norm: true
+  max_level: 3
+  wave_kernel_size: 16
+  wavelet_names: [db4, db6, sym4, sym8, coif2]
+  wave_init_mode: pad
+  use_separate_channel: true
+  fold_synthesis: 3
+  fold_gamma: 0.1
+  channel_encoding: id
+  channel_embed_dim: 64
+  dropout: 0.1
+  ecg_c1:
+    # 12 leads at 500 Hz in 10 s windows IS the pretraining route L12_500, so
+    # the pretrained wavelet frontend and patch embedding load too -- the whole
+    # encoder transfers, not only the transformer.
+    route_id: L12_500
+    patch_samples: 250          # 0.5 s, the pretraining patch
+    pool: mean
+    head_dropout: 0.1
+    pretrained: null            # set it (MODE=ft/probe), or leave it: the control
+train:
+  epochs: 30
+  warmup_ratio: 0.1
+  lr: 1.0e-4
+  min_lr_ratio: 0.01
+  weight_decay: 0.05
+  batch_size: 64
+  precision: bf16
+  grad_clip: 1.0
+  patience: 10
+  # macro AUROC; micro/macro F1 are reported with thresholds
+  # chosen per class on validation
+  select_by: auroc

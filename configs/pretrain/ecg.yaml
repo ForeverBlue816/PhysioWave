@@ -1,0 +1,25 @@
+defaults: [base, model/wast_tare]
+run_name: pretrain_ecg
+data:
+  modality: ecg
+  synthetic:
+    sampling_rate: 500.0
+    window_samples: 2048
+model:
+  modality: ecg           # forces spatial.ssl.enabled=False (no scalp sphere)
+  sampling_rate: 500.0
+  wast:
+    patch_size: 64
+    level: 3
+  compression:
+    num_queries: 8
+  spatial:
+    ssl:
+      enabled: false      # explicit: the 12-lead system has no spherical geometry
+    dyn:
+      band_wise: false    # ECG band definitions differ from EEG; broadband here
+pretrain:
+  use_reference_consistency: false   # ECG leads are a fixed derivation, not a montage
+  use_covariance: false
+  lambda_wave: 0.5
+  lambda_spec: 0.05

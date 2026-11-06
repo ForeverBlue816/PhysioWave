@@ -1,0 +1,38 @@
+{
+  "dataset": "tueg",
+  "window_index": 838817,
+  "recording_id": "edf/005/aaaaaawg/s001_2003/02_tcp_le/aaaaaawg_s001_t000.edf",
+  "subject_id": "aaaaaawg",
+  "channels": [
+    8,
+    9,
+    10
+  ],
+  "panels": [
+    "01_raw_input.svg",
+    "02_mask_grid.svg",
+    "03_masked_input.svg",
+    "04_wavelet_band_1_d1.svg",
+    "04_wavelet_band_2_d2.svg",
+    "04_wavelet_band_3_d3.svg",
+    "04_wavelet_band_4_approx.svg",
+    "04_wavelet_bands_stacked.svg",
+    "05_folded_spec.svg",
+    "08_raw_reconstruction.svg",
+    "09_raw_overlay.svg",
+    "10_spec_overlay.svg",
+    "H0_mask_grid_all.svg",
+    "H1_raw_target.svg",
+    "H2_raw_masked.svg",
+    "H3_raw_composite.svg",
+    "H4_raw_error.svg",
+    "H5_spec_target.svg",
+    "H6_spec_masked.svg",
+    "H7_spec_composite.svg",
+    "H8_spec_error.svg"
+  ],
+  "checkpoint": "$PW_FAST_ROOT/runs/pretrain_eeg_c1_moe/best.pth",
+  "epoch": 58,
+  "mask_seed": 1234,
+  "modality": "eeg"
+}

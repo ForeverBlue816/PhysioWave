@@ -1,0 +1,81 @@
+{
+  "checkpoint": "$PW_FAST_ROOT/runs/pretrain_eeg_c1_moe/best.pth",
+  "checkpoint_sha256": "4226871943e1ad68b434222c94a3a661642af6852bbf7e43eb84a4f042b5c131",
+  "epoch": 58,
+  "global_step": 44544,
+  "channel_vocab_sha256": "596f2711269e47b22a9335ba991f44b2edd02a5728ff4461487e26c3a9a302e8",
+  "plotting_script_git_commit": "f4b4a90fd93ef51804f9cf0f4e60b8cb351638cb",
+  "split": "val",
+  "mask_seed": 1234,
+  "manifest": "$SCRATCH/bio/eeg/eeg_c1_corpus/merged/manifest_val.jsonl",
+  "objective": {
+    "spec_weight": 0.5,
+    "raw_weight": 0.5,
+    "raw_beta": 0.5,
+    "fold_kl": 0.001,
+    "mask_before_frontend": true,
+    "normalize_spec_target": true
+  },
+  "objective_equation": "0.5*L_spec + 0.5*L_raw + 0.001*L_foldKL",
+  "metrics_last_epoch": 59,
+  "figure": "fig_mask_examples_by_dataset",
+  "generated_utc": "2026-09-09T05:23:26.446841+00:00",
+  "examples": [
+    {
+      "dataset_id": "tueg",
+      "route_id": "E19_256",
+      "subject_id": "aaaaaaaf",
+      "recording_id": "edf/000/aaaaaaaf/s001_2002/02_tcp_le/aaaaaaaf_s001_t000.edf",
+      "window_index": 0,
+      "mask_seed": 1234
+    },
+    {
+      "dataset_id": "faced",
+      "route_id": "E32_512",
+      "subject_id": "sub-019",
+      "recording_id": "sub-019/eeg/sub-019_task-watchingVideoClips_eeg.bdf",
+      "window_index": 0,
+      "mask_seed": 1234
+    },
+    {
+      "dataset_id": "tdbrain",
+      "route_id": "E32_512",
+      "subject_id": "sub-87964761",
+      "recording_id": "TDBRAIN_Dataset_V3_1/sub-87964761/ses-1/eeg/sub-87964761_ses-1_task-oddball_eeg.bdf",
+      "window_index": 0,
+      "mask_seed": 1234
+    },
+    {
+      "dataset_id": "physionet_mi",
+      "route_id": "E64_256",
+      "subject_id": "S017",
+      "recording_id": "eegmmidb-1.0.0/S017/S017R01.edf",
+      "window_index": 0,
+      "mask_seed": 1234
+    },
+    {
+      "dataset_id": "m3cv",
+      "route_id": "E64_256",
+      "subject_id": "sub-019",
+      "recording_id": "sub-019/ses-01/eeg/sub-019_ses-01_task-aep_eeg.vhdr",
+      "window_index": 0,
+      "mask_seed": 1234
+    },
+    {
+      "dataset_id": "hbn",
+      "route_id": "E128_512",
+      "subject_id": "sub-NDARBM839WR5",
+      "recording_id": "R2/sub-NDARBM839WR5/eeg/sub-NDARBM839WR5_task-DespicableMe_eeg.set",
+      "window_index": 0,
+      "mask_seed": 1234
+    },
+    {
+      "dataset_id": "hgd",
+      "route_id": "E128_512",
+      "subject_id": "1",
+      "recording_id": "sourcedata/test/1.edf",
+      "window_index": 0,
+      "mask_seed": 1234
+    }
+  ]
+}

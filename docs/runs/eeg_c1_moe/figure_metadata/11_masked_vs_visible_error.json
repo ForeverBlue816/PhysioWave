@@ -1,0 +1,40 @@
+{
+  "checkpoint": "$PW_FAST_ROOT/runs/pretrain_eeg_c1_moe/best.pth",
+  "checkpoint_sha256": "4226871943e1ad68b434222c94a3a661642af6852bbf7e43eb84a4f042b5c131",
+  "epoch": 59,
+  "global_step": 44544,
+  "channel_vocab_sha256": "596f2711269e47b22a9335ba991f44b2edd02a5728ff4461487e26c3a9a302e8",
+  "plotting_script_git_commit": "f4b4a90fd93ef51804f9cf0f4e60b8cb351638cb",
+  "split": "val",
+  "mask_seed": 1234,
+  "manifest": "$SCRATCH/bio/eeg/eeg_c1_corpus/merged/manifest_val.jsonl",
+  "objective": {
+    "spec_weight": 0.5,
+    "raw_weight": 0.5,
+    "raw_beta": 0.5,
+    "fold_kl": 0.001,
+    "mask_before_frontend": true,
+    "normalize_spec_target": true
+  },
+  "objective_equation": "0.5*L_spec + 0.5*L_raw + 0.001*L_foldKL",
+  "metrics_last_epoch": 59,
+  "figure": "11_masked_vs_visible_error",
+  "generated_utc": "2026-09-09T05:23:18.293659+00:00",
+  "n_tokens": {
+    "spec_masked": 729075712,
+    "spec_visible": 314454016,
+    "raw_masked": 729075712,
+    "raw_visible": 314454016
+  },
+  "mean_abs_error": {
+    "spec_masked": 0.37252516418006804,
+    "spec_visible": 0.6402395243220554,
+    "raw_masked": 0.33106797210709304,
+    "raw_visible": 0.45000222002849216
+  },
+  "masked_over_visible": {
+    "spec": 0.5818528066890778,
+    "raw": 0.7357029751678364
+  },
+  "note": "a ratio near 1 means masking costs the model nothing, which is what copying looks like"
+}
