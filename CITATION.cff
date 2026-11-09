@@ -1,5 +1,5 @@
 cff-version: 1.2.0
-message: "If you use this software, please cite the PhysioWave paper below."
+message: "If you use this software, please cite the papers below."
 title: "PhysioWave"
 type: software
 authors:
@@ -9,21 +9,38 @@ repository-code: "https://github.com/ForeverBlue816/PhysioWave"
 url: "https://huggingface.co/collections/ForeverBlue/physiowave-t"
 license: MIT
 preferred-citation:
-  type: conference-paper
-  title: "PhysioWave: A Multi-Scale Wavelet-Transformer for Physiological Signal Representation"
+  type: article
+  title: "PhysioWave-T: Token-Efficient Wavelet Foundation Models for Biosignals"
   authors:
     - family-names: Chen
       given-names: Yanlong
-    - family-names: Orlandi
-      given-names: Mattia
-    - family-names: Rapa
-      given-names: Pierangelo Maria
     - family-names: Benatti
       given-names: Simone
     - family-names: Benini
       given-names: Luca
+    - family-names: Guan
+      given-names: Cuntai
     - family-names: Li
       given-names: Yawei
-  collection-title: "Advances in Neural Information Processing Systems (NeurIPS)"
-  year: 2025
-  url: "https://arxiv.org/abs/2506.10351"
+  journal: "arXiv preprint arXiv:2611.08969"
+  year: 2026
+  url: "https://arxiv.org/abs/2611.08969"
+references:
+  - type: conference-paper
+    title: "PhysioWave: A Multi-Scale Wavelet-Transformer for Physiological Signal Representation"
+    authors:
+      - family-names: Chen
+        given-names: Yanlong
+      - family-names: Orlandi
+        given-names: Mattia
+      - family-names: Rapa
+        given-names: Pierangelo Maria
+      - family-names: Benatti
+        given-names: Simone
+      - family-names: Benini
+        given-names: Luca
+      - family-names: Li
+        given-names: Yawei
+    collection-title: "Advances in Neural Information Processing Systems (NeurIPS)"
+    year: 2025
+    url: "https://arxiv.org/abs/2506.10351"

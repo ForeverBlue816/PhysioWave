@@ -7,8 +7,9 @@
 
 # PhysioWave-T: Token-Efficient Wavelet Foundation Models for Biosignals
 
-[![NeurIPS 2025](https://img.shields.io/badge/NeurIPS-2025-blue.svg)](https://arxiv.org/abs/2506.10351)
-[![arXiv](https://img.shields.io/badge/arXiv-2506.10351-b31b1b.svg)](https://arxiv.org/abs/2506.10351)
+[![PhysioWave-T](https://img.shields.io/badge/arXiv-2611.08969-b31b1b.svg)](https://arxiv.org/abs/2611.08969)
+[![Paper page](https://img.shields.io/badge/%F0%9F%A4%97%20Paper-PhysioWave--T-ffcc4d.svg)](https://huggingface.co/papers/2611.08969)
+[![NeurIPS 2025](https://img.shields.io/badge/NeurIPS%202025-PhysioWave-blue.svg)](https://arxiv.org/abs/2506.10351)
 [![Hugging Face](https://img.shields.io/badge/%F0%9F%A4%97%20Collection-PhysioWave--T-ffcc4d.svg)](https://huggingface.co/collections/ForeverBlue/physiowave-t)
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.2+-ee4c2c.svg)](https://pytorch.org/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
@@ -18,7 +19,7 @@ and a reliability-aware fusion model that combines them.**
 
 </div>
 
-PhysioWave-T extends [PhysioWave (NeurIPS 2025)](docs/physiowave_v1.md) from ECG and
+[PhysioWave-T](https://arxiv.org/abs/2611.08969) extends [PhysioWave (NeurIPS 2025)](https://arxiv.org/abs/2506.10351) from ECG and
 sEMG to EEG, and from one fixed input layout per encoder to many. The extension
 rests on three ideas:
 
@@ -302,13 +303,32 @@ model.py  pretrain.py  finetune.py   the original PhysioWave (NeurIPS 2025), unc
 
 ## PhysioWave (NeurIPS 2025)
 
-The original ECG and sEMG model, with its training and fine-tuning guide, is still in this repository: [docs/physiowave_v1.md](docs/physiowave_v1.md).
+The original ECG and sEMG model is still in this repository (`model.py`, `pretrain.py`, `finetune.py`), with its training and fine-tuning guide in [docs/physiowave_v1.md](docs/physiowave_v1.md).
+
+**[📥 Download the PhysioWave pretrained models](https://drive.google.com/drive/folders/1CobMgFT1WIOAHfz1j7Yij3BL6kkjm59k?dmr=1&ec=wgc-drive-globalnav-goto)**
+
+| Model | Parameters | Training data | Description |
+|---|---|---|---|
+| `ecg.pth` | 14M | 182 GB ECG | PhysioWave ECG pretrained model |
+| `emg.pth` | 5M | 823 GB EMG | PhysioWave EMG pretrained model |
+
+```python
+checkpoint = torch.load("ecg.pth")
+model.load_state_dict(checkpoint["model_state_dict"])     # model = BERTWaveletTransformer(...), see model.py
+```
 
 ## Citation
 
-If you use this code or the released models, please cite PhysioWave:
+If you use this code or the released models, please cite:
 
 ```bibtex
+@article{chen2026physiowavet,
+  title   = {PhysioWave-T: Token-Efficient Wavelet Foundation Models for Biosignals},
+  author  = {Chen, Yanlong and Benatti, Simone and Benini, Luca and Guan, Cuntai and Li, Yawei},
+  journal = {arXiv preprint arXiv:2611.08969},
+  year    = {2026}
+}
+
 @inproceedings{chen2025physiowave,
   title     = {PhysioWave: A Multi-Scale Wavelet-Transformer for Physiological Signal Representation},
   author    = {Chen, Yanlong and Orlandi, Mattia and Rapa, Pierangelo Maria and Benatti, Simone and Benini, Luca and Li, Yawei},

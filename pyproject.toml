@@ -29,7 +29,8 @@ dev = ["pytest", "ruff"]
 [project.urls]
 Homepage = "https://github.com/ForeverBlue816/PhysioWave"
 Models = "https://huggingface.co/collections/ForeverBlue/physiowave-t"
-Paper = "https://arxiv.org/abs/2506.10351"
+Paper = "https://arxiv.org/abs/2611.08969"
+"Paper (NeurIPS 2025)" = "https://arxiv.org/abs/2506.10351"
 
 [tool.setuptools]
 # The PhysioWave-T package plus the original top-level modules it builds on.
