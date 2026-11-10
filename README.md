@@ -329,11 +329,13 @@ If you use this code or the released models, please cite:
   year    = {2026}
 }
 
-@inproceedings{chen2025physiowave,
-  title     = {PhysioWave: A Multi-Scale Wavelet-Transformer for Physiological Signal Representation},
-  author    = {Chen, Yanlong and Orlandi, Mattia and Rapa, Pierangelo Maria and Benatti, Simone and Benini, Luca and Li, Yawei},
-  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
-  year      = {2025}
+@article{chen2026physiowave,
+  title={Physiowave: A multi-scale wavelet-transformer for physiological signal representation},
+  author={Chen, Yanlong and Orlandi, Mattia and Rapa, Pierangelo and Benatti, Simone and Benini, Luca and Li, Yawei},
+  journal={Advances in Neural Information Processing Systems},
+  volume={38},
+  pages={169357--169399},
+  year={2026}
 }
 ```
 
