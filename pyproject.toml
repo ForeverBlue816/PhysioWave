@@ -8,7 +8,7 @@ version = "2.0.0"
 description = "PhysioWave-T: token-efficient wavelet foundation models for EEG, ECG and sEMG"
 readme = "README.md"
 license = { file = "LICENSE" }
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 authors = [{ name = "Yanlong Chen" }]
 keywords = ["EEG", "ECG", "EMG", "biosignal", "foundation model", "wavelet", "self-supervised"]
 classifiers = [
@@ -76,7 +76,7 @@ select = ["E", "F", "W", "I", "UP", "B"]
 ignore = [
     "E501",    # long lines are handled by the formatter, not the linter
     "B008",    # dataclass field(default_factory=...) is the intended pattern
-    # typing.List / Optional / Dict kept explicit: the codebase targets py3.9+
+    # typing.List / Optional / Dict kept explicit: the codebase targets py3.10+
     # and the annotations double as documentation in the public signatures.
     "UP006", "UP007", "UP035", "UP045",
 ]
